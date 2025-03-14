@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Rijksmuseum Art Explorer with Claude</title>
+    <link rel="stylesheet" href="css/styles.css?v=1712116402">
+    <script>
+    // Force reload CSS and ensure animations work consistently across all environments
+    (function() {
+        // Add random parameter to CSS URL to bypass cache
+        var links = document.getElementsByTagName('link');
+        for (var i = 0; i < links.length; i++) {
+            if (links[i].rel === 'stylesheet') {
+                links[i].href = links[i].href.split('?')[0] + '?v=' + (new Date().getTime());
+            }
+        }
+        
+        // Ensure CSS transitions are properly applied
+        window.addEventListener('load', function() {
+            // Force a reflow
+            document.body.offsetHeight;
+            
+            // Force hardware acceleration for all browsers
+            document.documentElement.style.transform = 'translateZ(0)';
+            
+            // Check if animations are working
+            var testElement = document.createElement('div');
+            testElement.style.opacity = '0';
+            testElement.style.transition = 'opacity 0.1s';
+            document.body.appendChild(testElement);
+            
+            // Force reflow
+            window.getComputedStyle(testElement).opacity;
+            testElement.style.opacity = '0.01';
+            
+            // Check if transition worked
+            setTimeout(function() {
+                var worked = window.getComputedStyle(testElement).opacity > 0;
+                console.log('Animation test: ' + (worked ? 'PASSED' : 'FAILED'));
+                testElement.remove();
+                
+                // If animations aren't working, add fallback
+                if (!worked) {
+                    console.warn('Animations not working, applying fallbacks');
+                    var style = document.createElement('style');
+                    style.textContent = `
+                        .message-loading-text, .message.assistant .message-content {
+                            background: linear-gradient(90deg, var(--message-bg-assistant) 0%, var(--message-bg-assistant) 100%);
+                        }
+                        
+                        .message-loading::after {
+                            border: 1px solid var(--accent-color) !important;
+                            animation: none !important;
+                        }
+                        
+                        .modal-content.active {
+                            transform: none !important;
+                            transition: opacity 0.4s ease !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }, 150);
+        });
+    })();
+    </script>
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    
+    <!-- Fonts and Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body data-theme="dark" class="has-fixed-footer">
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <i class="fas fa-sun"></i>
+    </button>
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Logo_Rijksmuseum.svg/799px-Logo_Rijksmuseum.svg.png" alt="Rijksmuseum Logo" class="logo">
+                <h1>Art Explorer with Claude</h1>
+            </div>
+            <p class="subtitle">Discover masterpieces from the Rijksmuseum collection through natural language</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="search-section">
+            <div class="chat-container">
+                <div class="messages" id="message-container">
+                    <div class="message assistant">
+                        <div class="message-content">
+                            <p>Welcome to the Rijksmuseum Art Explorer! I can help you discover beautiful artworks from the Rijksmuseum collection through natural language. What kind of art would you like to explore today?</p>
+                            
+                            <p>Try asking me things like:</p>
+                            
+                            <p><strong>Artwork Discovery:</strong></p>
+                            <ul>
+                                <li>"Show me paintings by Rembrandt from the 1640s"</li>
+                                <li>"Find artworks that prominently feature the color blue"</li>
+                                <li>"What are the most famous masterpieces in the collection?"</li>
+                                <li>"Search for still life paintings from the Dutch Golden Age"</li>
+                            </ul>
+                            
+                            <p><strong>Artwork Analysis:</strong></p>
+                            <ul>
+                                <li>"Tell me everything about The Night Watch"</li>
+                                <li>"What are the dimensions of Van Gogh's Self Portrait?"</li>
+                                <li>"Show me details of Vermeer's The Milkmaid"</li>
+                            </ul>
+                            
+                            <p><strong>Artist Research:</strong></p>
+                            <ul>
+                                <li>"Show me all works by Frans Hals"</li>
+                                <li>"How did Van Gogh's style evolve?"</li>
+                            </ul>
+                            
+                            <p><strong>Thematic Exploration:</strong></p>
+                            <ul>
+                                <li>"Find all artworks depicting biblical scenes"</li>
+                                <li>"Show me paintings of Amsterdam in the 17th century"</li>
+                                <li>"What artworks feature flowers or still life arrangements?"</li>
+                                <li>"Find portraits that include musical instruments"</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-container">
+                    <textarea id="user-input" placeholder="Ask about artwork (e.g., 'Show me paintings by Van Gogh')"></textarea>
+                    <button id="submit-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="artwork-gallery" id="artwork-gallery">
+            <!-- Artwork will be displayed here -->
+        </section>
+    </main>
+
+    <!-- Artwork Modal -->
+    <div class="artwork-modal" id="artwork-modal">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <div class="modal-artwork-container">
+                <div class="modal-artwork-left">
+                    <!-- Basic Information -->
+                    <div class="details-section basic-info">
+                        <h2 id="modal-title"></h2>
+                        <div class="artwork-metadata">
+                            <p id="modal-artist"></p>
+                            <p id="modal-date"></p>
+                        </div>
+                        <button id="explore-similar" class="explore-similar-btn">
+                            <i class="fas fa-compass"></i>
+                            Explore Similar Artwork
+                        </button>
+                    </div>
+                    <div class="modal-artwork-image">
+                        <img id="modal-image" src="" alt="">
+                        <div class="fullscreen-hint">Click to view fullscreen</div>
+                    </div>
+                </div>
+                <div class="modal-artwork-details">
+                    <!-- Artwork Details -->
+                    <div class="details-section">
+                        <h3><i class="fas fa-info-circle"></i> Artwork Details</h3>
+                        <div id="modal-description">
+                            <div class="loading-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Technical Information -->
+                    <div class="details-section">
+                        <h3><i class="fas fa-ruler-combined"></i> Technical Information</h3>
+                        <div class="technical-details">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <p>Loading artwork details...</p>
+                            </div>
+                            <div id="modal-dimensions"><strong>Size:</strong> Loading...</div>
+                            <div id="modal-materials"><strong>Medium:</strong> Loading...</div>
+                            <div id="modal-location"><strong>Location:</strong> Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Mode -->
+    <div class="fullscreen-mode" id="fullscreen-container" style="display: none;">
+        <div class="fullscreen-controls">
+            <button class="fullscreen-exit" id="fullscreen-exit">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <img id="fullscreen-image" class="fullscreen-image" src="" alt="">
+        <div class="fullscreen-caption" id="fullscreen-caption"></div>
+    </div>
+
+    <footer>
+        <p>Powered by the <a href="https://data.rijksmuseum.nl/object-metadata/api/" target="_blank">Rijksmuseum API</a> and Claude AI</p>
+        <p>Images © Rijksmuseum, Amsterdam</p>
+        <p>Developed by <a href="https://jacktheknave.com" target="_blank">Bandicoot Media</a></p>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

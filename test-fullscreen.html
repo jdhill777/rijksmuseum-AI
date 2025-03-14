@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fullscreen Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+        }
+        
+        .artwork-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* Fullscreen styles */
+        .fullscreen-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        
+        .fullscreen-container.active {
+            opacity: 1;
+        }
+        
+        .fullscreen-image {
+            max-width: 90vw;
+            max-height: 85vh;
+            object-fit: contain;
+        }
+        
+        .fullscreen-exit {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .fullscreen-exit:hover {
+            background-color: #e6007e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fullscreen Test</h1>
+        <p>Click on the image to test the fullscreen functionality</p>
+        
+        <img id="artwork-image" class="artwork-image" src="https://lh3.googleusercontent.com/cRtF3WdYfRQEY75SEoq35pwjwgnuYUAKpQcfj5jbN-PTHT_8JBYih_mpHqJ7WVQ=s0" alt="Rembrandt's Night Watch" onclick="enterFullscreen()">
+    </div>
+    
+    <!-- Fullscreen Mode -->
+    <div class="fullscreen-container" id="fullscreen-container">
+        <button class="fullscreen-exit" id="fullscreen-exit" onclick="exitFullscreen()">×</button>
+        <img id="fullscreen-image" class="fullscreen-image" src="" alt="">
+    </div>
+    
+    <script>
+        // Elements
+        const fullscreenContainer = document.getElementById('fullscreen-container');
+        const fullscreenImage = document.getElementById('fullscreen-image');
+        const fullscreenExit = document.getElementById('fullscreen-exit');
+        const artworkImage = document.getElementById('artwork-image');
+        
+        function enterFullscreen() {
+            // Get the current scroll position
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            // Set the image source
+            fullscreenImage.src = artworkImage.src;
+            fullscreenImage.alt = artworkImage.alt;
+            
+            // Configure the fullscreen container for proper centering
+            fullscreenContainer.style.paddingTop = '0'; // Remove any top padding
+            fullscreenContainer.style.display = 'flex';
+            fullscreenContainer.style.justifyContent = 'center'; // Center horizontally
+            fullscreenContainer.style.alignItems = 'center'; // Center vertically
+            
+            // Force a reflow so the transition will work
+            window.getComputedStyle(fullscreenContainer).opacity;
+            
+            // Add active class to trigger transitions
+            fullscreenContainer.classList.add('active');
+            
+            // Maintain the current scroll position
+            window.scrollTo({
+                top: scrollY,
+                behavior: 'auto'
+            });
+            
+            // Prevent scrolling
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function exitFullscreen() {
+            // Remove active class to trigger exit transitions
+            fullscreenContainer.classList.remove('active');
+            
+            // Wait for transition to complete before hiding
+            setTimeout(() => {
+                fullscreenContainer.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 400); // Match the transition duration
+        }
+        
+        // Also support ESC key to exit fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && fullscreenContainer.style.display === 'flex') {
+                exitFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
