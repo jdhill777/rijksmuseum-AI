@@ -326,11 +326,12 @@ app.post('/api/chat', async (req, res) => {
 
 CRITICAL OBJECTIVES:
 - Identify the true user intent behind queries about artworks
-- Convert common language into specialized art-historical terminology
+- Convert common language into specialized art-historical terminology 
 - Ensure search terms yield relevant, historically accurate results
 - For simple artist-specific queries, preserve the artist's name and intent
 - NEVER include modern objects, social messaging, or contemporary content in historical searches
 - Handle time periods explicitly for date-specific searches
+- For thematic searches like "biblical scenes", include specific biblical subjects and relevant artists
 
 DETAILED KNOWLEDGE BASE:
 
@@ -341,6 +342,21 @@ DETAILED KNOWLEDGE BASE:
 - Baroque (1600-1750): Rubens, Van Dyck
 - Romanticism (1800-1850): Théodore Géricault
 - Modern/Post-Impressionism (1880-1920): Van Gogh, Breitner, Mondrian
+
+2. SUBJECT MATTER EXPERTISE:
+- Biblical Scenes: "old testament new testament bible biblical religious christian scene painting rembrandt rubens lastsupper crucifixion moses abraham isaac jacob joseph mary jesus disciples apostles saints prophet"
+- Mythology: "greek roman myth gods goddesses hercules venus diana apollo jupiter bacchus"
+- Landscapes: "landscape seascape cityscape rural urban view scene canal mountain forest lake river sunset sunrise"
+- Portraits: "portrait self-portrait group family"
+- Still Life: "still life flowers fruit food hunt game fish birds animals table breakfast"
+- Genre Scenes: "daily life interior domestic scene tavern peasants street market celebration feast"
+
+3. CONTENT MATCHING STRATEGIES:
+- For general queries like "biblical scenes", expand to include specific episodes (nativity, crucifixion, exodus) AND key artists (Rembrandt, Rubens)
+- For thematic requests, focus on both subject matter AND art historical terminology
+- For artist searches, use full name and variations (Van Gogh = "Vincent van Gogh")
+- For period searches, include both timeframes AND major artists from that period
+- Always target actual artwork content, not letters, documents, or museum infrastructure
 
 YOU MUST ONLY RETURN VALID JSON. DO NOT include any explanation, markdown formatting, or text outside the JSON.
 Return a JSON object with exactly these properties:
@@ -494,9 +510,16 @@ Return a JSON object with exactly these properties:
         max_tokens: 1000,
         system: `You are an art expert specializing in the Rijksmuseum collection. 
           Help users discover and learn about artwork from the museum.
-          IMPORTANT: Only describe the actual artworks provided in the user's message. DO NOT mention artworks that are not included in the list.
           
-          Keep your responses concise and informative. Focus on providing interesting context about the artwork that will be displayed.`,
+          CRITICAL GUIDELINES:
+          - Only describe the actual artworks provided in the list - NEVER mention artworks that aren't included
+          - If the list contains letters or documents instead of paintings, politely explain that these aren't typical artworks
+            and suggest the user try more specific search terms (e.g., "painting biblical scene Rembrandt" instead of just "biblical scenes")
+          - For thematic queries like "biblical scenes" or "landscapes", focus on describing the visual content and historical context
+          - Keep responses concise, informative and focused on the artworks shown
+          - If no real artworks are found, suggest better search terms without inventing artwork that doesn't exist
+          
+          Remember that users want to see relevant visual artworks matching their query, not documents or letters.`,
         messages: [{ role: 'user', content: claudePrompt }]
       });
       console.log('Successfully received Claude response');
