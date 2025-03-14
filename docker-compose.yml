@@ -4,10 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: rijksmuseum-ai-interface
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "${PORT:-3002}:${PORT:-3002}"
+    # Use host network mode for simplicity - no port mapping needed
+    network_mode: host
     environment:
       # These values will be overridden by your .env file
       - PORT=${PORT:-3002}
@@ -16,14 +14,11 @@ services:
       - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3002}
       - HOSTNAME=${HOSTNAME:-}
-      # For Docker networking, we use the special host.docker.internal to connect to the host machine
-      # This is more reliable than service-to-service networking in some Docker setups
-      - MCP_SERVER_URL=http://host.docker.internal:${MCP_PORT:-3003}
+      # Use localhost for MCP server URL since we're using host networking
+      - MCP_SERVER_URL=http://localhost:${MCP_PORT:-3003}
     restart: unless-stopped
     depends_on:
       - mcp-server
-    networks:
-      - rijksmuseum-network
     labels:
       - "com.github.jdhill777.description=Rijksmuseum Art Explorer with Claude AI"
       - "com.github.jdhill777.service=rijksmuseum-interface"
@@ -33,10 +28,8 @@ services:
       context: ./rijksmuseum-mcp
       dockerfile: Dockerfile
     container_name: rijksmuseum-ai-mcp-server
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "${MCP_PORT:-3003}:${MCP_PORT:-3003}"
+    # Use host network mode for simplicity - no port mapping needed
+    network_mode: host
     environment:
       - PORT=${MCP_PORT:-3003}
       - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
@@ -44,15 +37,9 @@ services:
       # Optional: Mount for logs or other persistent data
       - mcp-data:/app/data
     restart: unless-stopped
-    networks:
-      - rijksmuseum-network
     labels:
       - "com.github.jdhill777.description=Rijksmuseum MCP Server"
       - "com.github.jdhill777.service=rijksmuseum-mcp"
-
-networks:
-  rijksmuseum-network:
-    driver: bridge
 
 volumes:
   mcp-data:
