@@ -347,25 +347,38 @@ function enterFullscreen() {
 }
     
 function exitFullscreen() {
-    console.log('Exiting fullscreen, restoring scroll position:', savedScrollPosition);
+    console.log('Exiting fullscreen, will restore to scroll position:', savedScrollPosition);
     
     // Remove active class to trigger exit transitions
     fullscreenContainer.classList.remove('active');
     
-    // Wait for transition to complete before hiding
+    // First phase: fade out the fullscreen view with a longer duration
+    fullscreenContainer.style.transition = 'opacity 0.8s ease-out';
+    
+    // Wait for the first phase of transition to progress before hiding
     setTimeout(() => {
+        // Hide the container and restore body scrolling
         fullscreenContainer.style.display = 'none';
         document.body.classList.remove('fullscreen-active');
         footer.style.zIndex = '50'; // Restore footer z-index
         
-        // Restore the scroll position to return to the modal's position
+        // Add a transition to the body for smoother scrolling
+        document.body.style.scrollBehavior = 'smooth';
+        
+        // Second phase: smoothly scroll back to the previous position
         window.scrollTo({
             top: savedScrollPosition,
-            behavior: 'auto' // Use 'auto' instead of 'smooth' for immediate positioning
+            behavior: 'smooth' // Use smooth scrolling for a more natural transition
         });
         
-        console.log('Restored scroll position after exiting fullscreen');
-    }, 400); // Match the transition duration
+        console.log('Smoothly restoring scroll position after exiting fullscreen');
+        
+        // Reset the scroll behavior after transition completes
+        setTimeout(() => {
+            document.body.style.scrollBehavior = '';
+        }, 800); // Match the scroll transition duration
+        
+    }, 600); // Increased from 400ms to 600ms for a less jarring transition
 }
 
     // Helper function for fetch with timeout - 60 second timeout for mobile
