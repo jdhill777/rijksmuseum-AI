@@ -187,11 +187,15 @@ sed -i "s/^ALLOWED_ORIGINS=.*/ALLOWED_ORIGINS=${ALLOWED_ORIGINS}/" .env
 
 # Set HOST and create MCP_SERVER_URL if missing
 sed -i "s/^HOST=.*/HOST=0.0.0.0/" .env
+
+# Use host.docker.internal special DNS name for container-to-host communication
+echo -e "${BLUE}Setting up Docker networking...${NC}"
 if ! grep -q "MCP_SERVER_URL=" .env; then
-    echo "MCP_SERVER_URL=http://localhost:${MCP_PORT}" >> .env
+    echo "MCP_SERVER_URL=http://host.docker.internal:${MCP_PORT}" >> .env
 else
-    sed -i "s|^MCP_SERVER_URL=.*|MCP_SERVER_URL=http://localhost:${MCP_PORT}|" .env
+    sed -i "s|^MCP_SERVER_URL=.*|MCP_SERVER_URL=http://host.docker.internal:${MCP_PORT}|" .env
 fi
+echo -e "${GREEN}Using host.docker.internal for container networking${NC}"
 
 echo -e "${GREEN}Environment configured:${NC}"
 echo -e "  Web server port: ${BLUE}${PORT}${NC}"

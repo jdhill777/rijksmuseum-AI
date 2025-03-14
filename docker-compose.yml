@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: rijksmuseum-ai-interface
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${PORT:-3002}:${PORT:-3002}"
     environment:
@@ -14,8 +16,9 @@ services:
       - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3002}
       - HOSTNAME=${HOSTNAME:-}
-      # Note: Within Docker network, we use the service name (mcp-server) to connect to the MCP server
-      - MCP_SERVER_URL=http://mcp-server:${MCP_PORT:-3003}
+      # For Docker networking, we use the special host.docker.internal to connect to the host machine
+      # This is more reliable than service-to-service networking in some Docker setups
+      - MCP_SERVER_URL=http://host.docker.internal:${MCP_PORT:-3003}
     restart: unless-stopped
     depends_on:
       - mcp-server
@@ -30,6 +33,8 @@ services:
       context: ./rijksmuseum-mcp
       dockerfile: Dockerfile
     container_name: rijksmuseum-ai-mcp-server
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${MCP_PORT:-3003}:${MCP_PORT:-3003}"
     environment:
