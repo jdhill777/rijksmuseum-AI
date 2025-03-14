@@ -88,6 +88,24 @@ Try asking about artworks in various ways:
 - "What artworks feature flowers or still life arrangements?"
 - "Find portraits that include musical instruments"
 
+## Configuration Examples
+
+### Local Development
+```
+PORT=3000
+HOST=0.0.0.0
+ALLOWED_ORIGINS=http://localhost:3000
+CLOUDFLARE_HOSTNAME=
+```
+
+### Cloudflare Tunnel
+```
+PORT=3000
+HOST=0.0.0.0
+ALLOWED_ORIGINS=http://localhost:3000,https://art.example.com,http://art.example.com
+CLOUDFLARE_HOSTNAME=art.example.com
+```
+
 ## Troubleshooting
 
 If you encounter connectivity issues:
@@ -97,8 +115,9 @@ If you encounter connectivity issues:
 3. **Firewall Settings**: Ensure your firewall allows incoming connections on your chosen port
 4. **Network Issues**: Verify both devices are on the same network
 5. **CORS Issues**: If accessing from a different domain, add that domain to ALLOWED_ORIGINS
-6. **Server Logs**: Check the terminal where the server is running for error messages
-7. **Restart Server**: Try stopping and restarting the server
+6. **Cloudflare Configuration**: If using Cloudflare, ensure CLOUDFLARE_HOSTNAME is set correctly
+7. **Server Logs**: Check the terminal where the server is running for error messages
+8. **Restart Server**: Try stopping and restarting the server
 
 ## Technologies Used
 
