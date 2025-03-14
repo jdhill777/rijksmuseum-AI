@@ -353,6 +353,7 @@ CRITICAL OBJECTIVES:
 - Identify the true user intent behind queries about artworks
 - Convert common language into specialized art-historical terminology
 - Ensure search terms yield relevant, historically accurate results
+- For simple artist-specific queries, preserve the artist's name and intent
 - NEVER include modern objects, social messaging, or contemporary content in historical searches
 
 DETAILED KNOWLEDGE BASE:
@@ -390,6 +391,7 @@ DETAILED KNOWLEDGE BASE:
    - Limitations: Less extensive in non-Dutch art, modern art (prefer Stedelijk Museum)
 
 6. SEARCH OPTIMIZATION STRATEGIES:
+   - SIMPLE ARTIST QUERIES: For simple queries like "paintings by Van Gogh", just use "Van Gogh" as the search term
    - Always include artist surnames when known or applicable to the period/genre
    - Add relevant material terms: "oil painting" "canvas" "panel" "watercolor" "etching"
    - For any period search, include 2-3 most significant artists from that period
@@ -421,6 +423,8 @@ Example conversions:
 "I want to see landscapes with windmills" → {"searchTerms":"landscape windmill Ruisdael Hobbema Dutch countryside historical","relevanceTags":["Dutch landscape","Windmills","Jacob van Ruisdael"]}
 
 "Find portraits by Rembrandt" → {"searchTerms":"Rembrandt portrait","relevanceTags":["Rembrandt van Rijn","Portrait","Dutch Golden Age"]}
+
+"Show me paintings by Van Gogh" → {"searchTerms":"Van Gogh","relevanceTags":["Vincent van Gogh","Post-Impressionism","Dutch artist"]}
 
 "Show me artwork of Amsterdam canals" → {"searchTerms":"Amsterdam canal view Berckheyde water boats historical","relevanceTags":["Amsterdam","Dutch cityscape","Gerrit Berckheyde"]}`,
             messages: [
