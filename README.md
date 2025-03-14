@@ -37,6 +37,9 @@ This application allows you to explore artworks from the Rijksmuseum collection 
    - `ALLOWED_ORIGINS`: Comma-separated list of allowed origins for CORS
      - Leave empty to use default origins
      - Example: `http://localhost:3000,https://example.com`
+   - `CLOUDFLARE_HOSTNAME`: If using Cloudflare as a proxy, set this to your domain name
+     - Example: `art.example.com`
+     - This helps the app detect when it's being accessed through Cloudflare
 
 5. Start the server:
    ```

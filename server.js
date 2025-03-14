@@ -25,7 +25,7 @@ const __dirname = dirname(__filename);
 const allowedOriginsEnv = process.env.ALLOWED_ORIGINS || '';
 const allowedOrigins = allowedOriginsEnv
   ? allowedOriginsEnv.split(',')
-  : ['http://localhost:' + PORT, 'https://art.bandicoot.media', 'http://art.bandicoot.media', '*'];
+  : ['http://localhost:' + PORT, '*'];
 
 // Middleware - Enhanced CORS for external access
 app.use(cors({
@@ -582,7 +582,9 @@ app.get('/api/artwork/:objectNumber', async (req, res) => {
   res.setHeader('X-Response-Time', Date.now().toString());
   
   // Check if request is coming from Cloudflare
-  const isCloudflare = req.headers['cf-ray'] || (req.headers.host && req.headers.host.includes('bandicoot.media'));
+  const cfHostname = process.env.CLOUDFLARE_HOSTNAME || ''; // Get Cloudflare hostname from env
+  const isCloudflare = req.headers['cf-ray'] || 
+                     (cfHostname && req.headers.host && req.headers.host.includes(cfHostname));
   console.log(`Request is ${isCloudflare ? 'from Cloudflare' : 'direct'}`);
   
   // If this is a critical artwork and it's coming from Cloudflare, use our fallback data
