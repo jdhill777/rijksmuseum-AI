@@ -280,6 +280,10 @@ submitButton.addEventListener('click', () => {
     });
     
 function enterFullscreen() {
+    // Save current scroll position before entering fullscreen
+    const scrollPosition = window.scrollY || window.pageYOffset;
+    console.log('Entering fullscreen, current scroll position:', scrollPosition);
+    
     // Set the image source
     fullscreenImage.src = modalImage.src;
     fullscreenImage.alt = modalImage.alt;
@@ -291,35 +295,35 @@ function enterFullscreen() {
     document.body.classList.add('fullscreen-active');
     
     // Configure the fullscreen container for proper viewport centering
-    fullscreenContainer.style.position = 'fixed'; // Ensure it's fixed in viewport
+    // Fixed positioning removes the container from the document flow
+    fullscreenContainer.style.position = 'fixed';
     fullscreenContainer.style.top = '0';
     fullscreenContainer.style.left = '0';
-    fullscreenContainer.style.right = '0'; // Ensure full width
-    fullscreenContainer.style.bottom = '0'; // Ensure full height
-    fullscreenContainer.style.width = '100%';
-    fullscreenContainer.style.height = '100%';
+    fullscreenContainer.style.right = '0';
+    fullscreenContainer.style.bottom = '0';
+    fullscreenContainer.style.width = '100vw'; // Use viewport width
+    fullscreenContainer.style.height = '100vh'; // Use viewport height
     fullscreenContainer.style.padding = '0';
     fullscreenContainer.style.margin = '0';
     fullscreenContainer.style.display = 'flex';
-    fullscreenContainer.style.justifyContent = 'center'; 
+    fullscreenContainer.style.justifyContent = 'center';
     fullscreenContainer.style.alignItems = 'center';
-    fullscreenContainer.style.zIndex = '9999'; // Make sure it's on top
+    fullscreenContainer.style.zIndex = '9999';
     
-    // Create a container for the image and controls if it doesn't exist
-    let imageContainer = document.querySelector('.fullscreen-container');
-    if (!imageContainer) {
-        imageContainer = document.createElement('div');
-        imageContainer.className = 'fullscreen-container';
-        
-        // Move the image into the container
-        fullscreenImage.parentNode.insertBefore(imageContainer, fullscreenImage);
-        imageContainer.appendChild(fullscreenImage);
-        
-        // Move controls inside the container for proper positioning
-        const controls = document.querySelector('.fullscreen-controls');
-        if (controls) {
-            imageContainer.appendChild(controls);
-        }
+    // Prepare fullscreen image - ensure it stays in the viewport
+    fullscreenImage.style.maxWidth = '95vw';
+    fullscreenImage.style.maxHeight = '85vh';
+    fullscreenImage.style.objectFit = 'contain';
+    fullscreenImage.style.margin = '0 auto'; // Center horizontally
+    fullscreenImage.style.display = 'block'; // Ensure proper display mode
+    
+    // Position fullscreen controls at the top
+    const controls = document.querySelector('.fullscreen-controls');
+    if (controls) {
+        controls.style.position = 'absolute';
+        controls.style.top = '20px';
+        controls.style.right = '20px';
+        controls.style.zIndex = '10000';
     }
     
     // Force a reflow so the transition will work
@@ -330,6 +334,13 @@ function enterFullscreen() {
     
     // Ensure footer is not visible in fullscreen
     footer.style.zIndex = '1';
+    
+    // Once fullscreen is activated, make sure we're at the top of the viewport
+    setTimeout(() => {
+        // Reset any scroll that might have happened
+        window.scrollTo(0, 0);
+        console.log('Reset scroll position in fullscreen mode');
+    }, 50);
 }
     
 function exitFullscreen() {
