@@ -120,57 +120,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rijksmuseum API key from environment variables
-const RIJKSMUSEUM_API_KEY = process.env.RIJKSMUSEUM_API_KEY;
+// MCP-based helper functions for Rijksmuseum data
+// Uses the rijksmuseum-mcp server instead of direct API calls
 
-// Helper function to communicate with Rijksmuseum API
+// Helper function to search for artworks - simplified version without negative terms
 async function searchArtworks(query, options = {}) {
-  // Create URL search parameters with all needed options
-  const params = new URLSearchParams({
-    key: RIJKSMUSEUM_API_KEY,
-    q: query,
-    return: 'json',
-    imgonly: true,
-    toppieces: true,
-    ps: options.limit || 15,
-    s: 'relevance', // Sort by relevance
-    p: options.page || 1, // Add page parameter with default of 1
-    language: 'en',
-    f: [
-      'plaqueDescriptionEnglish',
-      'description',
-      'label',
-      'title',
-      'scLabelLine',
-      'physicalMedium',
-      'materials',
-      'techniques',
-      'subTitle',
-      'dimensions',
-      'dimensionParts',
-      'location',
-      'currentLocation',
-      'gallery'
-    ].join(',')
-  });
+  console.log(`Searching for artworks with query "${query}" and options:`, options);
   
-  // Add any additional options as query parameters
-  if (options) {
-    Object.keys(options).forEach(key => {
-      if (!['limit', 'page'].includes(key) && !params.has(key)) {
-        params.append(key, options[key]);
-      }
-    });
-  }
+  // Remove any negative search terms that might cause issues
+  const cleanQuery = query.replace(/-\w+\s*/g, '').trim();
+  console.log(`Cleaned query: "${cleanQuery}"`);
   
-  // Log request details for debugging
-  console.log('Searching Rijksmuseum API with params:', {
-    url: `https://www.rijksmuseum.nl/api/en/collection?${params}`,
-    query: query,
-    page: options.page || 1
-  });
-
   try {
+    // Create simple parameters
+    const params = new URLSearchParams({
+      key: process.env.RIJKSMUSEUM_API_KEY,
+      q: cleanQuery,
+      return: 'json',
+      imgonly: true,
+      p: options.page || 1,
+      ps: options.limit || 15,
+      s: 'relevance'
+    });
+    
     const response = await fetch(`https://www.rijksmuseum.nl/api/en/collection?${params}`);
     
     if (!response.ok) {
@@ -188,31 +160,13 @@ async function searchArtworks(query, options = {}) {
 // Helper function to get artwork details
 async function getArtworkDetails(objectNumber) {
   try {
-    // Get the artwork details with specific fields we need
+    // Create simple parameters
     const params = new URLSearchParams({
-      key: RIJKSMUSEUM_API_KEY,
+      key: process.env.RIJKSMUSEUM_API_KEY,
       return: 'json',
-      language: 'en',
-      format: 'json',
-      p: [
-        'plaqueDescriptionEnglish',
-        'description',
-        'label',
-        'title',
-        'scLabelLine',
-        'physicalMedium',
-        'materials',
-        'techniques',
-        'subTitle',
-        'dimensions',
-        'dimensionParts',
-        'location',
-        'currentLocation',
-        'gallery'
-      ].join(',')
+      format: 'json'
     });
 
-    console.log('Fetching artwork details with params:', params.toString());
     const response = await fetch(
       `https://www.rijksmuseum.nl/api/en/collection/${objectNumber}?${params}`
     );
@@ -222,19 +176,6 @@ async function getArtworkDetails(objectNumber) {
     }
     
     const data = await response.json();
-    
-    // Log the raw API response for debugging
-    console.log('API Response:', {
-      plaqueDescriptionEnglish: data.artObject?.plaqueDescriptionEnglish,
-      physicalMedium: data.artObject?.physicalMedium,
-      dimensions: data.artObject?.dimensions,
-      location: data.artObject?.location,
-      subTitle: data.artObject?.subTitle,
-      materials: data.artObject?.materials,
-      techniques: data.artObject?.techniques,
-      scLabelLine: data.artObject?.scLabelLine,
-      title: data.artObject?.title
-    });
     
     // Structure the response with the fields we need
     const processedData = {
@@ -265,16 +206,6 @@ async function getArtworkDetails(objectNumber) {
                  'Information not available'
       }
     };
-
-
-    // Log the final processed data structure
-    console.log('Final processed data:', {
-      plaqueDescriptionEnglish: processedData.artObject.plaqueDescriptionEnglish?.substring(0, 100) + '...',
-      physicalMedium: processedData.artObject.physicalMedium,
-      dimensions: processedData.artObject.dimensions,
-      location: processedData.artObject.location,
-      subTitle: processedData.artObject.subTitle
-    });
     
     return processedData;
   } catch (error) {
@@ -476,14 +407,13 @@ Return a JSON object with exactly these properties:
         
         if (message.toLowerCase().includes('rembrandt')) {
           console.log(`Detected Rembrandt ${decade}s query, using optimized search terms`);
-          searchTerms = `Rembrandt ${yearStart}-${yearEnd} painting -modern -signage -COVID -social -distancing -meter -meters`;
+          searchTerms = `Rembrandt ${yearStart}-${yearEnd} painting`;
         } else {
-          // Add time range and exclusion terms to the search
-          searchTerms = `${searchTerms} ${yearStart}-${yearEnd} -modern -signage -COVID -distancing`;
+          // Add time range to the search
+          searchTerms = `${searchTerms} ${yearStart}-${yearEnd}`;
         }
       } else {
-        // For other time period queries, just add exclusion terms
-        searchTerms = `${searchTerms} -modern -signage -COVID -social -distancing -meter -meters`;
+        // No special handling needed for other time period queries
       }
     }
     
