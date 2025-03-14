@@ -581,15 +581,15 @@ app.get('/api/artwork/:objectNumber', async (req, res) => {
   res.setHeader('CF-Cache-Status', 'BYPASS');
   res.setHeader('X-Response-Time', Date.now().toString());
   
-  // Check if request is coming from Cloudflare
-  const cfHostname = process.env.CLOUDFLARE_HOSTNAME || ''; // Get Cloudflare hostname from env
-  const isCloudflare = req.headers['cf-ray'] || 
-                     (cfHostname && req.headers.host && req.headers.host.includes(cfHostname));
-  console.log(`Request is ${isCloudflare ? 'from Cloudflare' : 'direct'}`);
+  // Check if request is coming from a proxy or custom hostname
+  const hostname = process.env.HOSTNAME || ''; // Get hostname from env
+  const isProxy = req.headers['cf-ray'] || // Cloudflare specific header 
+                 (hostname && req.headers.host && req.headers.host.includes(hostname));
+  console.log(`Request is ${isProxy ? 'from proxy/custom domain' : 'direct'}`);
   
-  // If this is a critical artwork and it's coming from Cloudflare, use our fallback data
-  if (isCloudflare && CRITICAL_ARTWORKS[objectNumber]) {
-    console.log('Using fallback data for Cloudflare tunnel request');
+  // If this is a critical artwork and it's coming from a proxy, use our fallback data
+  if (isProxy && CRITICAL_ARTWORKS[objectNumber]) {
+    console.log('Using fallback data for proxy/custom domain request');
     return res.json(CRITICAL_ARTWORKS[objectNumber]);
   }
   

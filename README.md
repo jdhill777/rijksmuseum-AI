@@ -44,7 +44,7 @@ This design keeps API keys secure on the server side and simplifies the frontend
    PORT=3000                  # You can change this to any port number you prefer!
    HOST=0.0.0.0
    ALLOWED_ORIGINS=
-   CLOUDFLARE_HOSTNAME=
+   HOSTNAME=
    ```
 
    **⚠️ SECURITY WARNING**:
@@ -64,8 +64,9 @@ This design keeps API keys secure on the server side and simplifies the frontend
    - `ALLOWED_ORIGINS`: Which websites can access your app (important for security)
      - For personal use on your own computer, you can leave this empty
      - If hosting online, include your domain: `http://localhost:YOUR_PORT,https://your-domain.com`
-   - `CLOUDFLARE_HOSTNAME`: (Optional - only needed if using Cloudflare)
+   - `HOSTNAME`: (Optional - only needed if hosting with a custom domain)
      - Most users can leave this blank
+     - Example: `art.example.com` or your domain name
 
 5. Start the server:
    ```
@@ -125,7 +126,7 @@ Try asking about artworks in various ways:
 PORT=8080                        # Any port number you prefer!
 HOST=0.0.0.0                     # Allow access from other devices on your network
 ALLOWED_ORIGINS=http://localhost:8080  # Match your chosen port number here
-CLOUDFLARE_HOSTNAME=             # Leave empty (you don't need this)
+HOSTNAME=                        # Leave empty (you don't need this)
 ```
 
 ### Advanced: Hosting Online
@@ -133,7 +134,7 @@ CLOUDFLARE_HOSTNAME=             # Leave empty (you don't need this)
 PORT=9000                        # Any port number you prefer!
 HOST=0.0.0.0                     # Allow access from any device
 ALLOWED_ORIGINS=http://localhost:9000,https://your-domain.com
-CLOUDFLARE_HOSTNAME=             # Only needed if using Cloudflare
+HOSTNAME=your-domain.com         # Your domain name if hosting online
 ```
 
 ## Troubleshooting
@@ -158,6 +159,8 @@ If you encounter connectivity issues:
    - Make sure your API keys are correctly entered in the `.env` file
    - Check the terminal for any error messages
    - Try stopping the server (press Ctrl+C in the terminal) and restarting it
+
+5. **Domain Configuration**: If hosting with a custom domain, make sure your HOSTNAME is set correctly
 
 ## Technologies Used
 
