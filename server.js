@@ -342,12 +342,12 @@ app.post('/api/chat', async (req, res) => {
         });
         console.log('Successfully received Claude response');
         
-        // Extract search terms and relevance tags
-        try {
-          const termExtractor = await anthropic.messages.create({
-            model: 'claude-3-haiku-20240307',
-            max_tokens: 400, // Increased for more detailed response
-            system: `You are an elite art historian with encyclopedic knowledge of the Rijksmuseum collection and Dutch art. Your task is to translate user queries into optimal search terms for the Rijksmuseum API.
+          // Extract search terms and relevance tags
+          try {
+            const termExtractor = await anthropic.messages.create({
+              model: 'claude-3-haiku-20240307',
+              max_tokens: 400, // Increased for more detailed response
+              system: `You are an elite art historian with encyclopedic knowledge of the Rijksmuseum collection and Dutch art. Your task is to translate user queries into optimal search terms for the Rijksmuseum API.
 
 CRITICAL OBJECTIVES:
 - Identify the true user intent behind queries about artworks
@@ -355,11 +355,13 @@ CRITICAL OBJECTIVES:
 - Ensure search terms yield relevant, historically accurate results
 - For simple artist-specific queries, preserve the artist's name and intent
 - NEVER include modern objects, social messaging, or contemporary content in historical searches
+- Handle time periods explicitly for date-specific searches
 
 DETAILED KNOWLEDGE BASE:
 
 1. ART PERIODS AND CORRESPONDING MASTERS:
-   - Dutch Golden Age (1588-1672): Rembrandt, Vermeer, Frans Hals, Jan Steen, Pieter de Hooch
+   - Dutch Golden Age (1588-1672): Rembrandt (active 1625-1669), Vermeer (active 1653-1675), Frans Hals (active 1610-1666)
+   - Rembrandt's Decades: 1630s (early portraits), 1640s (biblical narratives, Night Watch), 1650s-1660s (introspective works)
    - Renaissance (1400-1600): Hieronymus Bosch, Lucas van Leyden
    - Baroque (1600-1750): Rubens, Van Dyck
    - Romanticism (1800-1850): Théodore Géricault
@@ -409,6 +411,8 @@ DETAILED KNOWLEDGE BASE:
    - NEVER return modern signage, informational graphics, or museum installations
    - NEVER return digital art, photographs, or post-1950 works for historical queries
    - Add term "historical" for any pre-20th century query to enforce temporal relevance
+   - For queries with specific time periods (like "1640s", "17th century", etc.), add negative terms to exclude modern content: "-modern -COVID -social -distancing -meter -meters -guidance"
+   - When handling decade-specific searches like "1640s", translate to explicit year range: "1640-1649"
 
 YOU MUST ONLY RETURN VALID JSON. DO NOT include any explanation, markdown formatting, or text outside the JSON.
 Return a JSON object with exactly these properties:
@@ -481,6 +485,35 @@ Example conversions:
         console.error('Error getting Claude response:', claudeError);
         // Provide a fallback response even if Claude fails
         claudeResponse = { content: [{ text: `Here are some artworks related to "${message}" from the Rijksmuseum collection.` }] };
+      }
+      
+      // Preprocess search terms for time period queries
+      const decadeMatch = message.match(/\b(\d{4})s\b/i); // Match patterns like "1640s"
+      const timeQuery = decadeMatch || 
+                     message.toLowerCase().includes('century') ||
+                     message.match(/\b(\d{4})-(\d{4})\b/); // Match year ranges
+      
+      // Apply special processing for time periods to avoid modern signage
+      if (timeQuery) {
+        console.log('Detected time period query, applying special processing');
+        
+        // Handle specific decade queries (e.g., "1640s")
+        if (decadeMatch) {
+          const decade = decadeMatch[1];
+          const yearStart = decade;
+          const yearEnd = parseInt(decade) + 9;
+          
+          if (message.toLowerCase().includes('rembrandt')) {
+            console.log(`Detected Rembrandt ${decade}s query, using optimized search terms`);
+            searchTerms = `Rembrandt ${yearStart}-${yearEnd} painting -modern -signage -COVID -social -distancing -meter -meters`;
+          } else {
+            // Add time range and exclusion terms to the search
+            searchTerms = `${searchTerms} ${yearStart}-${yearEnd} -modern -signage -COVID -distancing`;
+          }
+        } else {
+          // For other time period queries, just add exclusion terms
+          searchTerms = `${searchTerms} -modern -signage -COVID -social -distancing -meter -meters`;
+        }
       }
       
       // Search for artworks with pagination support
