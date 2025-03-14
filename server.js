@@ -344,7 +344,7 @@ DETAILED KNOWLEDGE BASE:
 - Modern/Post-Impressionism (1880-1920): Van Gogh, Breitner, Mondrian
 
 2. SUBJECT MATTER EXPERTISE:
-- Biblical Scenes: "old testament new testament bible biblical religious christian scene painting rembrandt rubens lastsupper crucifixion moses abraham isaac jacob joseph mary jesus disciples apostles saints prophet"
+- Biblical Scenes: "biblical scene painting religious bible"
 - Mythology: "greek roman myth gods goddesses hercules venus diana apollo jupiter bacchus"
 - Landscapes: "landscape seascape cityscape rural urban view scene canal mountain forest lake river sunset sunrise"
 - Portraits: "portrait self-portrait group family"
@@ -413,6 +413,15 @@ Return a JSON object with exactly these properties:
     
     // Step 2: Apply artist filtering and special search term handling
     let artistFilter = null;
+    
+    // Handle special thematic queries first
+    if (message.toLowerCase().includes('biblical scene') || 
+        message.toLowerCase().includes('bible scene') || 
+        message.toLowerCase().includes('religious scene')) {
+      console.log('Detected biblical scenes query, applying special handling');
+      // Use simpler terms that are known to work with the API
+      searchTerms = "biblical scene painting";
+    }
     
     // Detect specific artists
     if (message.toLowerCase().includes('van gogh') || 
