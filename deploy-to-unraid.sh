@@ -42,6 +42,39 @@ else
     cd $MAIN_DIR
 fi
 
+# Create Dockerfile for MCP server if it doesn't exist
+echo -e "${BLUE}Creating Dockerfile for MCP server...${NC}"
+cat > rijksmuseum-mcp/Dockerfile << 'EOF'
+# Dockerfile for Rijksmuseum MCP server
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --production
+
+# Copy source code and built files
+COPY . .
+
+# Build TypeScript if needed
+RUN npm run build
+
+# Environment variables
+ENV PORT=3003
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE ${PORT}
+
+# Start the server
+CMD ["node", "build/index.js"]
+EOF
+echo -e "${GREEN}MCP server Dockerfile created${NC}"
+
 # Configure .env file
 if [ ! -f ".env" ]; then
     echo -e "${YELLOW}No .env file found. Creating template...${NC}"
