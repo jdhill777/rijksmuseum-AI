@@ -7,15 +7,15 @@ services:
       dockerfile: Dockerfile
     container_name: rijksmuseum-interface
     ports:
-      - "3000:3000"
+      - "3002:3002"
     environment:
       # These values will be overridden by your .env file if you use
       # docker-compose --env-file .env up
-      - PORT=3000
+      - PORT=3002
       - HOST=0.0.0.0
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3002}
       - HOSTNAME=${HOSTNAME:-}
     restart: unless-stopped
     # For Unraid, you might want to add specific labels

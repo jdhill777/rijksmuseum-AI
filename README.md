@@ -117,8 +117,8 @@ graph TD
    ```
    ANTHROPIC_API_KEY=your-anthropic-key
    RIJKSMUSEUM_API_KEY=your-rijksmuseum-key
-   MCP_SERVER_URL=http://localhost:3001
-   PORT=3000
+   MCP_SERVER_URL=http://localhost:3003
+   PORT=3002
    HOST=0.0.0.0
    ```
 
@@ -128,14 +128,14 @@ graph TD
    ```
 
 6. **Access**
-   - Local: [http://localhost:3000](http://localhost:3000)
-   - Network: http://YOUR_IP:3000
+   - Local: [http://localhost:3002](http://localhost:3002)
+   - Network: http://YOUR_IP:3002
 
 ## 📱 Mobile Access
 
 Scan this QR code to open the app on your phone (when running locally):
 
-![QR Code Example](https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://localhost:3000)
+![QR Code Example](https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://localhost:3002)
 (Replace with your actual IP address in production)
 
 ## 🔧 Advanced Configuration
@@ -146,10 +146,10 @@ Scan this QR code to open the app on your phone (when running locally):
 |----------|-------------|---------|
 | `ANTHROPIC_API_KEY` | Your Anthropic API key | Required |
 | `RIJKSMUSEUM_API_KEY` | Your Rijksmuseum API key | Required |
-| `MCP_SERVER_URL` | URL to your Rijksmuseum MCP server | http://localhost:3001 |
-| `PORT` | Server port | 3000 |
+| `MCP_SERVER_URL` | URL to your Rijksmuseum MCP server | http://localhost:3003 |
+| `PORT` | Server port | 3002 |
 | `HOST` | Host binding | 0.0.0.0 |
-| `ALLOWED_ORIGINS` | CORS allowed origins | http://localhost:3000* |
+| `ALLOWED_ORIGINS` | CORS allowed origins | http://localhost:3002* |
 | `HOSTNAME` | Custom domain name | Optional |
 
 ### Configuration Examples
@@ -193,13 +193,13 @@ docker-compose down
 ### Manual Docker Command
 ```bash
 docker run -d \
-  -p 3000:3000 \
+  -p 3002:3002 \
   -e ANTHROPIC_API_KEY=your_api_key \
   -e RIJKSMUSEUM_API_KEY=your_api_key \
-  -e MCP_SERVER_URL=http://host.docker.internal:3001 \
-  -e PORT=3000 \
+  -e MCP_SERVER_URL=http://host.docker.internal:3003 \
+  -e PORT=3002 \
   -e HOST=0.0.0.0 \
-  -e ALLOWED_ORIGINS=http://your-server-ip:3000 \
+  -e ALLOWED_ORIGINS=http://your-server-ip:3002 \
   --name rijksmuseum-interface \
   rijksmuseum-interface
 ```

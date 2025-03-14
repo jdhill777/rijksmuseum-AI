@@ -14,7 +14,7 @@ dotenv.config();
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // Parse HOST value, removing any comments
 const parseHost = (hostStr) => {
@@ -124,7 +124,7 @@ app.use((req, res, next) => {
 // Uses the rijksmuseum-mcp server instead of direct API calls
 
 // MCP server configuration - adapted to use directly via HTTP
-const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3001';
+const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3003';
 
 // Helper function to search for artworks via MCP server
 async function searchArtworks(query, options = {}) {
