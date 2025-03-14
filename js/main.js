@@ -279,10 +279,13 @@ submitButton.addEventListener('click', () => {
         }
     });
     
+// Store the scroll position globally so we can restore it when exiting fullscreen
+let savedScrollPosition = 0;
+
 function enterFullscreen() {
     // Save current scroll position before entering fullscreen
-    const scrollPosition = window.scrollY || window.pageYOffset;
-    console.log('Entering fullscreen, current scroll position:', scrollPosition);
+    savedScrollPosition = window.scrollY || window.pageYOffset;
+    console.log('Entering fullscreen, saving scroll position:', savedScrollPosition);
     
     // Set the image source
     fullscreenImage.src = modalImage.src;
@@ -344,6 +347,8 @@ function enterFullscreen() {
 }
     
 function exitFullscreen() {
+    console.log('Exiting fullscreen, restoring scroll position:', savedScrollPosition);
+    
     // Remove active class to trigger exit transitions
     fullscreenContainer.classList.remove('active');
     
@@ -352,6 +357,14 @@ function exitFullscreen() {
         fullscreenContainer.style.display = 'none';
         document.body.classList.remove('fullscreen-active');
         footer.style.zIndex = '50'; // Restore footer z-index
+        
+        // Restore the scroll position to return to the modal's position
+        window.scrollTo({
+            top: savedScrollPosition,
+            behavior: 'auto' // Use 'auto' instead of 'smooth' for immediate positioning
+        });
+        
+        console.log('Restored scroll position after exiting fullscreen');
     }, 400); // Match the transition duration
 }
 
