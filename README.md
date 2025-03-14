@@ -19,13 +19,18 @@ This application allows you to explore artworks from the Rijksmuseum collection 
    ```
    npm install
    ```
-3. Create a `.env` file with your API keys (copy from `.env.example`):
+3. Create a `.env` file with your API keys:
+   - **Option 1**: Rename the `.env.example` file to `.env` 
+   - **Option 2**: Copy the contents from `.env.example` to a new `.env` file
+   
+   Then fill in your API keys and configure as needed:
    ```
    ANTHROPIC_API_KEY=your-anthropic-key-here
    RIJKSMUSEUM_API_KEY=your-rijksmuseum-key-here
    PORT=3000
    HOST=0.0.0.0
    ALLOWED_ORIGINS=
+   CLOUDFLARE_HOSTNAME=
    ```
    - Get your Anthropic API key from: [https://console.anthropic.com/](https://console.anthropic.com/)
    - Get your Rijksmuseum API key from: [https://data.rijksmuseum.nl/object-metadata/api/](https://data.rijksmuseum.nl/object-metadata/api/)

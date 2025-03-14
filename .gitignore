@@ -25,3 +25,9 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+# Test and demo files
+test-*.html
+test-*.js
+*-demo.js
+restart-*.js
