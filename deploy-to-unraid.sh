@@ -137,11 +137,22 @@ prompt_for_api_key "Rijksmuseum API Key" "RIJKSMUSEUM_API_KEY" "https://data.rij
 # Set port configuration
 echo -e "${BLUE}Configuring network settings...${NC}"
 
-# Get current port values or set defaults
-CURRENT_PORT=$(grep -oP "PORT=\K[0-9]+" .env 2>/dev/null | tr -d '\n' || echo "3002")
-CURRENT_MCP_PORT=$(grep -oP "MCP_PORT=\K[0-9]+" .env 2>/dev/null | tr -d '\n' || echo "3003")
-CURRENT_HOSTNAME=$(grep -oP "HOSTNAME=\K[^\n]+" .env 2>/dev/null | tr -d '\n' || echo "")
-CURRENT_ALLOWED_ORIGINS=$(grep -oP "ALLOWED_ORIGINS=\K[^\n]+" .env 2>/dev/null | tr -d '\n' || echo "")
+# Make sure .env file has clean line endings (fix any Windows CRLF issues)
+sed -i 's/\r$//' .env
+
+# Get current port values or set defaults - ensure clean extraction
+CURRENT_PORT=$(grep -E "^PORT=[0-9]+" .env | cut -d= -f2 | tr -d '\r\n' || echo "3002")
+CURRENT_MCP_PORT=$(grep -E "^MCP_PORT=[0-9]+" .env | cut -d= -f2 | tr -d '\r\n' || echo "3003")
+CURRENT_HOSTNAME=$(grep -E "^HOSTNAME=" .env | cut -d= -f2 | tr -d '\r\n' || echo "")
+CURRENT_ALLOWED_ORIGINS=$(grep -E "^ALLOWED_ORIGINS=" .env | cut -d= -f2 | tr -d '\r\n' || echo "")
+
+# Ensure we have clean integer values for ports
+CURRENT_PORT=$(echo "$CURRENT_PORT" | grep -o '^[0-9]*' || echo "3002")
+CURRENT_MCP_PORT=$(echo "$CURRENT_MCP_PORT" | grep -o '^[0-9]*' || echo "3003")
+
+echo "${BLUE}Current Configuration:${NC}"
+echo "  Web server port: ${YELLOW}${CURRENT_PORT}${NC}"
+echo "  MCP server port: ${YELLOW}${CURRENT_MCP_PORT}${NC}"
 
 # Ask for port configuration
 read -p "Web server port [${CURRENT_PORT}]: " NEW_PORT </dev/tty
