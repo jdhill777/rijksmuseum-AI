@@ -305,28 +305,24 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'No message provided' });
   }
   
+  try {
+    console.log('Processing request for message:', message);
+    let claudeResponse = null;
+    let searchTerms = message;
+    const pageNum = parseInt(page) || 1;
+    
+    // Prepare response object
+    const responseObject = {
+      artworks: [],
+      relevanceTags: []
+    };
+    
+    // Step 1: Extract search terms using Claude
     try {
-      console.log('Processing request for message:', message);
-      let claudeResponse = null;
-      let searchTerms = message;
-      
-      // Prepare response object
-      const responseObject = {
-        artworks: [],
-        relevanceTags: []
-      };
-      
-      try {
-        // IMPORTANT: First, get the artworks, then we'll use Claude to describe them
-        // This ensures Claude only talks about artworks we actually have available to show
-        
-        // Extract search terms first
-        // Extract search terms and relevance tags
-        try {
-          const termExtractor = await anthropic.messages.create({
-            model: 'claude-3-haiku-20240307',
-            max_tokens: 400, // Increased for more detailed response
-            system: `You are an elite art historian with encyclopedic knowledge of the Rijksmuseum collection and Dutch art. Your task is to translate user queries into optimal search terms for the Rijksmuseum API.
+      const termExtractor = await anthropic.messages.create({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 400,
+        system: `You are an elite art historian with encyclopedic knowledge of the Rijksmuseum collection and Dutch art. Your task is to translate user queries into optimal search terms for the Rijksmuseum API.
 
 CRITICAL OBJECTIVES:
 - Identify the true user intent behind queries about artworks
@@ -339,12 +335,12 @@ CRITICAL OBJECTIVES:
 DETAILED KNOWLEDGE BASE:
 
 1. ART PERIODS AND CORRESPONDING MASTERS:
- - Dutch Golden Age (1588-1672): Rembrandt (active 1625-1669), Vermeer (active 1653-1675), Frans Hals (active 1610-1666)
- - Rembrandt's Decades: 1630s (early portraits), 1640s (biblical narratives, Night Watch), 1650s-1660s (introspective works)
- - Renaissance (1400-1600): Hieronymus Bosch, Lucas van Leyden
- - Baroque (1600-1750): Rubens, Van Dyck
- - Romanticism (1800-1850): Théodore Géricault
- - Modern/Post-Impressionism (1880-1920): Van Gogh, Breitner, Mondrian
+- Dutch Golden Age (1588-1672): Rembrandt (active 1625-1669), Vermeer (active 1653-1675), Frans Hals (active 1610-1666)
+- Rembrandt's Decades: 1630s (early portraits), 1640s (biblical narratives, Night Watch), 1650s-1660s (introspective works)
+- Renaissance (1400-1600): Hieronymus Bosch, Lucas van Leyden
+- Baroque (1600-1750): Rubens, Van Dyck
+- Romanticism (1800-1850): Théodore Géricault
+- Modern/Post-Impressionism (1880-1920): Van Gogh, Breitner, Mondrian
 
 YOU MUST ONLY RETURN VALID JSON. DO NOT include any explanation, markdown formatting, or text outside the JSON.
 Return a JSON object with exactly these properties:
@@ -352,215 +348,177 @@ Return a JSON object with exactly these properties:
   "searchTerms": "extracted main search terms optimized for API",
   "relevanceTags": ["tag1", "tag2", "tag3"]
 }`,
-            messages: [
-              {
-                role: 'user',
-                content: message
-              }
-            ]
-          });
-          
-          // Try to extract just the JSON part from the response if it contains non-JSON text
-          let jsonText = termExtractor.content[0].text.trim();
-          
-          // Find where JSON object starts and ends if there's any surrounding text
-          const jsonStartIndex = jsonText.indexOf('{');
-          const jsonEndIndex = jsonText.lastIndexOf('}');
-          
-          if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
-            jsonText = jsonText.substring(jsonStartIndex, jsonEndIndex + 1);
-          }
-          
-          // Parse the JSON text
-          const extractedData = JSON.parse(jsonText);
-          // Use more specific search terms if available, otherwise fall back to original message
-          if (extractedData.searchTerms && extractedData.searchTerms.trim()) {
-            console.log(`Using extracted search terms: "${extractedData.searchTerms}"`);
-            searchTerms = extractedData.searchTerms;
-          } else {
-            console.log(`No valid search terms extracted, using original message`);
-            searchTerms = message;
-          }
-          
-          // Use extracted relevance tags if available
-          if (Array.isArray(extractedData.relevanceTags) && extractedData.relevanceTags.length > 0) {
-            responseObject.relevanceTags = extractedData.relevanceTags;
-          } else {
-            responseObject.relevanceTags = [message];
-          }
-        } catch (extractError) {
-          console.error('Error extracting search terms:', extractError);
-          console.log('Falling back to using the artist name or key terms from the message');
-          
-          // Extract artist name if it contains "by [Artist Name]"
-          const artistMatch = message.match(/\b(?:by|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i);
-          if (artistMatch && artistMatch[1]) {
-            searchTerms = artistMatch[1] + " " + message.split(artistMatch[0])[0].trim();
-          } else {
-            searchTerms = message;
-          }
-          
-          responseObject.relevanceTags = [message];
-        }
-        
-        // Special handling for artist-specific searches to ensure correct results
-        let artistFilter = null;
-
-        if (message.toLowerCase().includes('van gogh') || 
-            searchTerms.toLowerCase().includes('van gogh') ||
-            searchTerms.toLowerCase().includes('vangogh')) {
-          console.log('Detected Van Gogh query, applying artist filter');
-          artistFilter = 'Vincent van Gogh';
-          // Make sure we're using proper search terms for Van Gogh
-          searchTerms = 'Vincent van Gogh';
-        } else if (message.toLowerCase().includes('rembrandt') || 
-                  searchTerms.toLowerCase().includes('rembrandt')) {
-          console.log('Detected Rembrandt query, applying artist filter');
-          artistFilter = 'Rembrandt van Rijn';
-        } else if (message.toLowerCase().includes('frans hals') || 
-                  searchTerms.toLowerCase().includes('frans hals') ||
-                  searchTerms.toLowerCase().includes('franshals')) {
-          console.log('Detected Frans Hals query, applying artist filter');
-          artistFilter = 'Frans Hals';
-          // Make sure we're using proper search terms
-          searchTerms = 'Frans Hals';
-        } else if (message.toLowerCase().includes('vermeer') || 
-                  searchTerms.toLowerCase().includes('vermeer')) {
-          console.log('Detected Vermeer query, applying artist filter');
-          artistFilter = 'Johannes Vermeer';
-        } else if (message.toLowerCase().match(/\bby\s+(\w+)\b/i)) {
-          // Generic artist detection - if query contains "by Artist"
-          const artistMatch = message.toLowerCase().match(/\bby\s+(\w+)\b/i);
-          if (artistMatch && artistMatch[1]) {
-            const artistName = artistMatch[1].charAt(0).toUpperCase() + artistMatch[1].slice(1);
-            console.log(`Detected generic artist query for "${artistName}", applying artist filter`);
-            artistFilter = artistName;
-          }
-        }
-        
-        // Preprocess search terms for time period queries
-        const decadeMatch = message.match(/\b(\d{4})s\b/i); // Match patterns like "1640s"
-        const timeQuery = decadeMatch || 
-                       message.toLowerCase().includes('century') ||
-                       message.match(/\b(\d{4})-(\d{4})\b/); // Match year ranges
-        
-        // Apply special processing for time periods to avoid modern signage
-        if (timeQuery) {
-          console.log('Detected time period query, applying special processing');
-          
-          // Handle specific decade queries (e.g., "1640s")
-          if (decadeMatch) {
-            const decade = decadeMatch[1];
-            const yearStart = decade;
-            const yearEnd = parseInt(decade) + 9;
-            
-            if (message.toLowerCase().includes('rembrandt')) {
-              console.log(`Detected Rembrandt ${decade}s query, using optimized search terms`);
-              searchTerms = `Rembrandt ${yearStart}-${yearEnd} painting -modern -signage -COVID -social -distancing -meter -meters`;
-            } else {
-              // Add time range and exclusion terms to the search
-              searchTerms = `${searchTerms} ${yearStart}-${yearEnd} -modern -signage -COVID -distancing`;
-            }
-          } else {
-            // For other time period queries, just add exclusion terms
-            searchTerms = `${searchTerms} -modern -signage -COVID -social -distancing -meter -meters`;
-          }
-        }
-        
-        // Search for artworks with pagination support
-        console.log(`Searching Rijksmuseum API for: "${searchTerms}" (page ${page})`);
-        
-        // Create pagination parameters
-        const pageNum = parseInt(page) || 1;
-        
-        // Fetch results with proper pagination parameters
-        let artworks = await searchArtworks(searchTerms, { 
-          p: pageNum  // This is the actual Rijksmuseum API parameter for page
-        });
-        
-        // Filter artworks by artist if an artist filter is set
-        if (artistFilter) {
-          console.log(`Filtering results to show only works by "${artistFilter}"`);
-          const filteredArtworks = artworks.filter(artwork => 
-            artwork.principalOrFirstMaker && 
-            artwork.principalOrFirstMaker.toLowerCase().includes(artistFilter.toLowerCase())
-          );
-          
-          console.log(`Filtered from ${artworks.length} to ${filteredArtworks.length} artworks`);
-          artworks = filteredArtworks;
-        }
-        
-        // Now that we have the artworks, pass them to Claude to describe
-        // This ensures Claude only talks about artworks we actually have available
-        console.log('Attempting to call Claude API with actual artwork data...');
-        
-        // Create a summary of the artworks to provide context to Claude
-        const artworkSummaries = artworks.slice(0, 5).map(artwork => {
-          return `- "${artwork.title}" by ${artwork.principalOrFirstMaker} (${artwork.longTitle})`;
-        }).join('\n');
-        
-        // Send Claude a message with the artwork details
-        claudeResponse = await anthropic.messages.create({
-          model: 'claude-3-opus-20240229',
-          max_tokens: 1000,
-          system: `You are an art expert specializing in the Rijksmuseum collection. 
-            Help users discover and learn about artwork from the museum.
-            IMPORTANT: Only describe the actual artworks provided in the user's message. DO NOT mention artworks that are not included in the list.
-            
-            Keep your responses concise and informative. Focus on providing interesting context about the artwork that will be displayed.`,
-          messages: [
-            {
-              role: 'user',
-              content: `${message}
-              
-              Here are the artworks that were found matching this query:
-              ${artworkSummaries.length > 0 ? artworkSummaries : "No specific artworks were found for this query."}
-              
-              Please provide a helpful, informative response about these specific artworks. Make sure your response only discusses the artworks listed above and does not mention other artworks that aren't in the results.`
-            }
-          ]
-        });
-        console.log('Successfully received Claude response');
-      } catch (claudeError) {
-        console.error('Error getting Claude response:', claudeError);
-        // Provide a fallback response even if Claude fails
-        claudeResponse = { content: [{ text: `Here are some artworks related to "${message}" from the Rijksmuseum collection.` }] };
-      }
-      
-      // Get the total number of results from API by doing a count-only request
-      const countResponse = await searchArtworks(searchTerms, { 
-        p: 0, 
-        ps: 1,  // Only get 1 result for counting
-        imgonly: true
+        messages: [{ role: 'user', content: message }]
       });
       
-      // Store the filtered artworks in the response object
-      responseObject.artworks = artworks;
+      // Try to extract just the JSON part from the response if it contains non-JSON text
+      let jsonText = termExtractor.content[0].text.trim();
+      
+      // Find where JSON object starts and ends if there's any surrounding text
+      const jsonStartIndex = jsonText.indexOf('{');
+      const jsonEndIndex = jsonText.lastIndexOf('}');
+      
+      if (jsonStartIndex >= 0 && jsonEndIndex > jsonStartIndex) {
+        jsonText = jsonText.substring(jsonStartIndex, jsonEndIndex + 1);
+      }
+      
+      // Parse the JSON text
+      const extractedData = JSON.parse(jsonText);
+      
+      // Use more specific search terms if available, otherwise fall back to original message
+      if (extractedData.searchTerms && extractedData.searchTerms.trim()) {
+        console.log(`Using extracted search terms: "${extractedData.searchTerms}"`);
+        searchTerms = extractedData.searchTerms;
+      } else {
+        console.log(`No valid search terms extracted, using original message`);
+        searchTerms = message;
+      }
+      
+      // Use extracted relevance tags if available
+      if (Array.isArray(extractedData.relevanceTags) && extractedData.relevanceTags.length > 0) {
+        responseObject.relevanceTags = extractedData.relevanceTags;
+      } else {
+        responseObject.relevanceTags = [message];
+      }
+    } catch (extractError) {
+      console.error('Error extracting search terms:', extractError);
+      console.log('Falling back to using the artist name or key terms from the message');
+      
+      // Extract artist name if it contains "by [Artist Name]"
+      const artistMatch = message.match(/\b(?:by|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i);
+      if (artistMatch && artistMatch[1]) {
+        searchTerms = artistMatch[1] + " " + message.split(artistMatch[0])[0].trim();
+      } else {
+        searchTerms = message;
+      }
+      
+      responseObject.relevanceTags = [message];
+    }
     
-    console.log('Preparing response with:', artworks.length, 'artworks');
+    // Step 2: Apply artist filtering and special search term handling
+    let artistFilter = null;
+    
+    // Detect specific artists
+    if (message.toLowerCase().includes('van gogh') || 
+        searchTerms.toLowerCase().includes('van gogh') ||
+        searchTerms.toLowerCase().includes('vangogh')) {
+      console.log('Detected Van Gogh query, applying artist filter');
+      artistFilter = 'Vincent van Gogh';
+      searchTerms = 'Vincent van Gogh';
+    } else if (message.toLowerCase().includes('rembrandt') || 
+              searchTerms.toLowerCase().includes('rembrandt')) {
+      console.log('Detected Rembrandt query, applying artist filter');
+      artistFilter = 'Rembrandt van Rijn';
+    } else if (message.toLowerCase().includes('frans hals') || 
+              searchTerms.toLowerCase().includes('frans hals') ||
+              searchTerms.toLowerCase().includes('franshals')) {
+      console.log('Detected Frans Hals query, applying artist filter');
+      artistFilter = 'Frans Hals';
+      searchTerms = 'Frans Hals';
+    } else if (message.toLowerCase().includes('vermeer') || 
+              searchTerms.toLowerCase().includes('vermeer')) {
+      console.log('Detected Vermeer query, applying artist filter');
+      artistFilter = 'Johannes Vermeer';
+    } else if (message.toLowerCase().match(/\bby\s+(\w+)\b/i)) {
+      // Generic artist detection - if query contains "by Artist"
+      const artistMatch = message.toLowerCase().match(/\bby\s+(\w+)\b/i);
+      if (artistMatch && artistMatch[1]) {
+        const artistName = artistMatch[1].charAt(0).toUpperCase() + artistMatch[1].slice(1);
+        console.log(`Detected generic artist query for "${artistName}", applying artist filter`);
+        artistFilter = artistName;
+      }
+    }
+    
+    // Handle time period queries
+    const decadeMatch = message.match(/\b(\d{4})s\b/i); // Match patterns like "1640s"
+    const timeQuery = decadeMatch || 
+                   message.toLowerCase().includes('century') ||
+                   message.match(/\b(\d{4})-(\d{4})\b/); // Match year ranges
+    
+    if (timeQuery) {
+      console.log('Detected time period query, applying special processing');
+      
+      if (decadeMatch) {
+        const decade = decadeMatch[1];
+        const yearStart = decade;
+        const yearEnd = parseInt(decade) + 9;
+        
+        if (message.toLowerCase().includes('rembrandt')) {
+          console.log(`Detected Rembrandt ${decade}s query, using optimized search terms`);
+          searchTerms = `Rembrandt ${yearStart}-${yearEnd} painting -modern -signage -COVID -social -distancing -meter -meters`;
+        } else {
+          // Add time range and exclusion terms to the search
+          searchTerms = `${searchTerms} ${yearStart}-${yearEnd} -modern -signage -COVID -distancing`;
+        }
+      } else {
+        // For other time period queries, just add exclusion terms
+        searchTerms = `${searchTerms} -modern -signage -COVID -social -distancing -meter -meters`;
+      }
+    }
+    
+    // Step 3: Search for artworks from Rijksmuseum API
+    console.log(`Searching Rijksmuseum API for: "${searchTerms}" (page ${pageNum})`);
+    let artworks = await searchArtworks(searchTerms, { p: pageNum });
+    
+    // Step 4: Apply artist filtering if needed
+    if (artistFilter) {
+      console.log(`Filtering results to show only works by "${artistFilter}"`);
+      const filteredArtworks = artworks.filter(artwork => 
+        artwork.principalOrFirstMaker && 
+        artwork.principalOrFirstMaker.toLowerCase().includes(artistFilter.toLowerCase())
+      );
+      
+      console.log(`Filtered from ${artworks.length} to ${filteredArtworks.length} artworks`);
+      artworks = filteredArtworks;
+    }
+    
+    // Step 5: Generate prompt for Claude based on actual artworks found
+    let claudePrompt = `${message}\n\nHere are the artworks that were found matching this query:\n`;
+    
+    if (artworks.length > 0) {
+      const artworkSummaries = artworks.slice(0, 5).map(artwork => {
+        return `- "${artwork.title}" by ${artwork.principalOrFirstMaker}`;
+      }).join('\n');
+      claudePrompt += artworkSummaries;
+    } else {
+      claudePrompt += "No specific artworks were found for this query.";
+    }
+    
+    claudePrompt += "\n\nPlease provide a helpful, informative response about these specific artworks. Make sure your response only discusses the artworks listed above and does not mention other artworks that aren't in the results.";
+    
+    // Step 6: Get Claude's response about the artworks
+    console.log('Calling Claude API with actual artwork data...');
+    try {
+      claudeResponse = await anthropic.messages.create({
+        model: 'claude-3-opus-20240229',
+        max_tokens: 1000,
+        system: `You are an art expert specializing in the Rijksmuseum collection. 
+          Help users discover and learn about artwork from the museum.
+          IMPORTANT: Only describe the actual artworks provided in the user's message. DO NOT mention artworks that are not included in the list.
+          
+          Keep your responses concise and informative. Focus on providing interesting context about the artwork that will be displayed.`,
+        messages: [{ role: 'user', content: claudePrompt }]
+      });
+      console.log('Successfully received Claude response');
+    } catch (claudeError) {
+      console.error('Error getting Claude response:', claudeError);
+      claudeResponse = { content: [{ text: `Here are some artworks related to "${message}" from the Rijksmuseum collection.` }] };
+    }
+    
+    // Step 7: Prepare final response
+    responseObject.artworks = artworks;
     
     // Calculate if there are likely more results available
-    // We need to set this explicitly to true for Van Gogh searches which may not
-    // return exactly 15 per page but still have more pages
     const isVanGoghSearch = searchTerms.toLowerCase().includes('van gogh') || 
                           searchTerms.toLowerCase().includes('vangogh') ||
                           searchTerms.toLowerCase().includes('gogh');
-                          
-    // Set hasMoreResults to true if:
-    // 1. We have a full page of results (15 items)
-    // 2. OR it's a Van Gogh search with at least 5 results
-    // 3. OR we're on page 1 with at least 10 results (indicating likely more available)
+    
     responseObject.hasMoreResults = artworks.length >= 15 || 
                                   (isVanGoghSearch && artworks.length >= 5) ||
                                   (pageNum === 1 && artworks.length >= 10);
-                                  
-    console.log('Setting hasMoreResults:', responseObject.hasMoreResults, 
-                'Full page:', artworks.length >= 15,
-                'Van Gogh search:', isVanGoghSearch,
-                'Page 1 with 10+ results:', (pageNum === 1 && artworks.length >= 10));
     
-    // Special handling if no artworks were found
-    if (artworks.length === 0 && page === 1) {
+    // Generate response text
+    if (artworks.length === 0 && pageNum === 1) {
       // Check if query might be for sensitive content
       const sensitiveTerms = ['nude', 'nudity', 'naked', 'sex', 'erotic', 'explicit', 'adult'];
       const isSensitiveQuery = sensitiveTerms.some(term => 
@@ -578,9 +536,8 @@ Return a JSON object with exactly these properties:
       responseObject.response = `Here are some artworks related to "${searchTerms}" from the Rijksmuseum collection.`;
     }
     
-    // Send response back to client
-    console.log('Sending response back to client. Response size:', 
-                JSON.stringify(responseObject).length, 'bytes');
+    // Step 8: Send response to client
+    console.log('Sending response back to client');
     res.json(responseObject);
     console.log('Response sent successfully');
     
