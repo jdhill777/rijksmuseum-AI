@@ -317,37 +317,16 @@ app.post('/api/chat', async (req, res) => {
       };
       
       try {
-        console.log('Attempting to call Claude API...');
-        // Always attempt to use Claude with the server's API key
-        claudeResponse = await anthropic.messages.create({
-          model: 'claude-3-opus-20240229',
-          max_tokens: 1000,
-          system: `You are an art expert specializing in the Rijksmuseum collection. 
-            Help users discover and learn about artwork from the museum. 
-            When users ask to see specific types of artwork, analyze their query to extract key search terms, such as:
-            - Artist names
-            - Time periods
-            - Art styles
-            - Subject matter
-            - Colors
-            - Materials
-            
-            Keep your responses concise and informative. Focus on providing interesting context about the artwork that will be displayed.`,
-          messages: [
-            {
-              role: 'user',
-              content: message
-            }
-          ]
-        });
-        console.log('Successfully received Claude response');
+        // IMPORTANT: First, get the artworks, then we'll use Claude to describe them
+        // This ensures Claude only talks about artworks we actually have available to show
         
-          // Extract search terms and relevance tags
-          try {
-            const termExtractor = await anthropic.messages.create({
-              model: 'claude-3-haiku-20240307',
-              max_tokens: 400, // Increased for more detailed response
-              system: `You are an elite art historian with encyclopedic knowledge of the Rijksmuseum collection and Dutch art. Your task is to translate user queries into optimal search terms for the Rijksmuseum API.
+        // Extract search terms first
+        // Extract search terms and relevance tags
+        try {
+          const termExtractor = await anthropic.messages.create({
+            model: 'claude-3-haiku-20240307',
+            max_tokens: 400, // Increased for more detailed response
+            system: `You are an elite art historian with encyclopedic knowledge of the Rijksmuseum collection and Dutch art. Your task is to translate user queries into optimal search terms for the Rijksmuseum API.
 
 CRITICAL OBJECTIVES:
 - Identify the true user intent behind queries about artworks
@@ -360,77 +339,19 @@ CRITICAL OBJECTIVES:
 DETAILED KNOWLEDGE BASE:
 
 1. ART PERIODS AND CORRESPONDING MASTERS:
-   - Dutch Golden Age (1588-1672): Rembrandt (active 1625-1669), Vermeer (active 1653-1675), Frans Hals (active 1610-1666)
-   - Rembrandt's Decades: 1630s (early portraits), 1640s (biblical narratives, Night Watch), 1650s-1660s (introspective works)
-   - Renaissance (1400-1600): Hieronymus Bosch, Lucas van Leyden
-   - Baroque (1600-1750): Rubens, Van Dyck
-   - Romanticism (1800-1850): Théodore Géricault
-   - Modern/Post-Impressionism (1880-1920): Van Gogh, Breitner, Mondrian
-
-2. GENRES AND SPECIALIZED ARTISTS:
-   - Still Life: Willem Kalf (luxury objects), Willem Claesz Heda (banquet pieces), Pieter Claesz (vanitas), Jan Davidsz de Heem (flowers)
-   - Landscape: Jacob van Ruisdael (dramatic scenes), Meindert Hobbema (wooded landscapes), Jan van Goyen (atmospheric scenes)
-   - Portrait: Rembrandt (psychological depth), Frans Hals (vivid expressions), Johannes Verspronck (elegant poses)
-   - Genre Scenes: Jan Steen (chaotic households), Pieter de Hooch (domestic scenes), Vermeer (quiet interiors)
-   - History Painting: Rembrandt (biblical scenes), Ferdinand Bol (mythological subjects)
-   - Marine: Willem van de Velde (naval battles), Ludolf Backhuysen (stormy seas)
-
-3. SUBJECT MATTER SPECIFICS:
-   - Religious: "biblical scene" "passion of christ" "old testament" "new testament"
-   - Mythological: "greek myth" "roman gods" "metamorphoses" "ovid"
-   - Daily Life: "tavern scene" "domestic interior" "merrymaking" "peasant"
-   - Trade/Economy: "merchant" "east india company" "trade goods" "commerce"
-   - Landscape Features: "windmill" "dutch countryside" "winter scene" "frozen canal"
-
-4. ARTISTIC TECHNIQUES:
-   - Painting Effects: "chiaroscuro" "impasto" "glazing" "sfumato" 
-   - Color Palettes: "monochrome" "earthy palette" "jewel tones" "Utrecht caravaggisti"
-   - Compositional Terms: "vanishing point" "rule of thirds" "repoussoir" "trompe l'oeil"
-
-5. RIJKSMUSEUM COLLECTION STRENGTHS:
-   - Masterpieces: "Night Watch" "Milkmaid" "The Threatened Swan" "The Merry Family"
-   - Strong Collections: Dutch masters, Asian art, Delftware, weapons/armor, doll houses
-   - Limitations: Less extensive in non-Dutch art, modern art (prefer Stedelijk Museum)
-
-6. SEARCH OPTIMIZATION STRATEGIES:
-   - SIMPLE ARTIST QUERIES: For simple queries like "paintings by Van Gogh", just use "Van Gogh" as the search term
-   - Always include artist surnames when known or applicable to the period/genre
-   - Add relevant material terms: "oil painting" "canvas" "panel" "watercolor" "etching"
-   - For any period search, include 2-3 most significant artists from that period
-   - For genre searches, include both genre name AND likely subjects (e.g. "still life fruit flowers")
-   - Avoid overly broad terms like "art" or "painting" that dilute search effectiveness
-   - When period and genre are specified, prioritize genre-specific masters from that period
-
-7. CULTURAL/HISTORICAL CONTEXT:
-   - Protestant Reformation impact: reduced religious imagery, increased secular subjects
-   - Dutch colonial expansion: emergence of exotic subjects, Asian influences
-   - Dutch Republic's merchant class: rise of portrait commissions, domestic scenes
-   - Counter-Reformation: Catholic symbolic imagery, allegorical content
-
-8. CONTEMPORARY EXCLUSIONS:
-   - NEVER return modern signage, informational graphics, or museum installations
-   - NEVER return digital art, photographs, or post-1950 works for historical queries
-   - Add term "historical" for any pre-20th century query to enforce temporal relevance
-   - For queries with specific time periods (like "1640s", "17th century", etc.), add negative terms to exclude modern content: "-modern -COVID -social -distancing -meter -meters -guidance"
-   - When handling decade-specific searches like "1640s", translate to explicit year range: "1640-1649"
+ - Dutch Golden Age (1588-1672): Rembrandt (active 1625-1669), Vermeer (active 1653-1675), Frans Hals (active 1610-1666)
+ - Rembrandt's Decades: 1630s (early portraits), 1640s (biblical narratives, Night Watch), 1650s-1660s (introspective works)
+ - Renaissance (1400-1600): Hieronymus Bosch, Lucas van Leyden
+ - Baroque (1600-1750): Rubens, Van Dyck
+ - Romanticism (1800-1850): Théodore Géricault
+ - Modern/Post-Impressionism (1880-1920): Van Gogh, Breitner, Mondrian
 
 YOU MUST ONLY RETURN VALID JSON. DO NOT include any explanation, markdown formatting, or text outside the JSON.
 Return a JSON object with exactly these properties:
 {
   "searchTerms": "extracted main search terms optimized for API",
   "relevanceTags": ["tag1", "tag2", "tag3"]
-}
-
-Example conversions:
-"Show me still life paintings" → {"searchTerms":"still life painting Heda Claesz fruit flowers banquet","relevanceTags":["Still life","Dutch Golden Age","Willem Claesz Heda"]}
-
-"I want to see landscapes with windmills" → {"searchTerms":"landscape windmill Ruisdael Hobbema Dutch countryside historical","relevanceTags":["Dutch landscape","Windmills","Jacob van Ruisdael"]}
-
-"Find portraits by Rembrandt" → {"searchTerms":"Rembrandt portrait","relevanceTags":["Rembrandt van Rijn","Portrait","Dutch Golden Age"]}
-
-"Show me paintings by Van Gogh" → {"searchTerms":"Van Gogh","relevanceTags":["Vincent van Gogh","Post-Impressionism","Dutch artist"]}
-
-"Show me artwork of Amsterdam canals" → {"searchTerms":"Amsterdam canal view Berckheyde water boats historical","relevanceTags":["Amsterdam","Dutch cityscape","Gerrit Berckheyde"]}`,
+}`,
             messages: [
               {
                 role: 'user',
@@ -481,67 +402,130 @@ Example conversions:
           
           responseObject.relevanceTags = [message];
         }
+        
+        // Special handling for artist-specific searches to ensure correct results
+        let artistFilter = null;
+
+        if (message.toLowerCase().includes('van gogh') || 
+            searchTerms.toLowerCase().includes('van gogh') ||
+            searchTerms.toLowerCase().includes('vangogh')) {
+          console.log('Detected Van Gogh query, applying artist filter');
+          artistFilter = 'Vincent van Gogh';
+          // Make sure we're using proper search terms for Van Gogh
+          searchTerms = 'Vincent van Gogh';
+        } else if (message.toLowerCase().includes('rembrandt') || 
+                  searchTerms.toLowerCase().includes('rembrandt')) {
+          console.log('Detected Rembrandt query, applying artist filter');
+          artistFilter = 'Rembrandt van Rijn';
+        } else if (message.toLowerCase().includes('frans hals') || 
+                  searchTerms.toLowerCase().includes('frans hals') ||
+                  searchTerms.toLowerCase().includes('franshals')) {
+          console.log('Detected Frans Hals query, applying artist filter');
+          artistFilter = 'Frans Hals';
+          // Make sure we're using proper search terms
+          searchTerms = 'Frans Hals';
+        } else if (message.toLowerCase().includes('vermeer') || 
+                  searchTerms.toLowerCase().includes('vermeer')) {
+          console.log('Detected Vermeer query, applying artist filter');
+          artistFilter = 'Johannes Vermeer';
+        } else if (message.toLowerCase().match(/\bby\s+(\w+)\b/i)) {
+          // Generic artist detection - if query contains "by Artist"
+          const artistMatch = message.toLowerCase().match(/\bby\s+(\w+)\b/i);
+          if (artistMatch && artistMatch[1]) {
+            const artistName = artistMatch[1].charAt(0).toUpperCase() + artistMatch[1].slice(1);
+            console.log(`Detected generic artist query for "${artistName}", applying artist filter`);
+            artistFilter = artistName;
+          }
+        }
+        
+        // Preprocess search terms for time period queries
+        const decadeMatch = message.match(/\b(\d{4})s\b/i); // Match patterns like "1640s"
+        const timeQuery = decadeMatch || 
+                       message.toLowerCase().includes('century') ||
+                       message.match(/\b(\d{4})-(\d{4})\b/); // Match year ranges
+        
+        // Apply special processing for time periods to avoid modern signage
+        if (timeQuery) {
+          console.log('Detected time period query, applying special processing');
+          
+          // Handle specific decade queries (e.g., "1640s")
+          if (decadeMatch) {
+            const decade = decadeMatch[1];
+            const yearStart = decade;
+            const yearEnd = parseInt(decade) + 9;
+            
+            if (message.toLowerCase().includes('rembrandt')) {
+              console.log(`Detected Rembrandt ${decade}s query, using optimized search terms`);
+              searchTerms = `Rembrandt ${yearStart}-${yearEnd} painting -modern -signage -COVID -social -distancing -meter -meters`;
+            } else {
+              // Add time range and exclusion terms to the search
+              searchTerms = `${searchTerms} ${yearStart}-${yearEnd} -modern -signage -COVID -distancing`;
+            }
+          } else {
+            // For other time period queries, just add exclusion terms
+            searchTerms = `${searchTerms} -modern -signage -COVID -social -distancing -meter -meters`;
+          }
+        }
+        
+        // Search for artworks with pagination support
+        console.log(`Searching Rijksmuseum API for: "${searchTerms}" (page ${page})`);
+        
+        // Create pagination parameters
+        const pageNum = parseInt(page) || 1;
+        
+        // Fetch results with proper pagination parameters
+        let artworks = await searchArtworks(searchTerms, { 
+          p: pageNum  // This is the actual Rijksmuseum API parameter for page
+        });
+        
+        // Filter artworks by artist if an artist filter is set
+        if (artistFilter) {
+          console.log(`Filtering results to show only works by "${artistFilter}"`);
+          const filteredArtworks = artworks.filter(artwork => 
+            artwork.principalOrFirstMaker && 
+            artwork.principalOrFirstMaker.toLowerCase().includes(artistFilter.toLowerCase())
+          );
+          
+          console.log(`Filtered from ${artworks.length} to ${filteredArtworks.length} artworks`);
+          artworks = filteredArtworks;
+        }
+        
+        // Now that we have the artworks, pass them to Claude to describe
+        // This ensures Claude only talks about artworks we actually have available
+        console.log('Attempting to call Claude API with actual artwork data...');
+        
+        // Create a summary of the artworks to provide context to Claude
+        const artworkSummaries = artworks.slice(0, 5).map(artwork => {
+          return `- "${artwork.title}" by ${artwork.principalOrFirstMaker} (${artwork.longTitle})`;
+        }).join('\n');
+        
+        // Send Claude a message with the artwork details
+        claudeResponse = await anthropic.messages.create({
+          model: 'claude-3-opus-20240229',
+          max_tokens: 1000,
+          system: `You are an art expert specializing in the Rijksmuseum collection. 
+            Help users discover and learn about artwork from the museum.
+            IMPORTANT: Only describe the actual artworks provided in the user's message. DO NOT mention artworks that are not included in the list.
+            
+            Keep your responses concise and informative. Focus on providing interesting context about the artwork that will be displayed.`,
+          messages: [
+            {
+              role: 'user',
+              content: `${message}
+              
+              Here are the artworks that were found matching this query:
+              ${artworkSummaries.length > 0 ? artworkSummaries : "No specific artworks were found for this query."}
+              
+              Please provide a helpful, informative response about these specific artworks. Make sure your response only discusses the artworks listed above and does not mention other artworks that aren't in the results.`
+            }
+          ]
+        });
+        console.log('Successfully received Claude response');
       } catch (claudeError) {
         console.error('Error getting Claude response:', claudeError);
         // Provide a fallback response even if Claude fails
         claudeResponse = { content: [{ text: `Here are some artworks related to "${message}" from the Rijksmuseum collection.` }] };
       }
-      
-      // Special handling for artist-specific searches to ensure correct results
-      let artistFilter = null;
-
-      if (message.toLowerCase().includes('van gogh') || 
-          searchTerms.toLowerCase().includes('van gogh') ||
-          searchTerms.toLowerCase().includes('vangogh')) {
-        console.log('Detected Van Gogh query, applying artist filter');
-        artistFilter = 'Vincent van Gogh';
-        // Make sure we're using proper search terms for Van Gogh
-        searchTerms = 'Vincent van Gogh';
-      } else if (message.toLowerCase().includes('rembrandt') || 
-                searchTerms.toLowerCase().includes('rembrandt')) {
-        console.log('Detected Rembrandt query, applying artist filter');
-        artistFilter = 'Rembrandt van Rijn';
-      }
-      
-      // Preprocess search terms for time period queries
-      const decadeMatch = message.match(/\b(\d{4})s\b/i); // Match patterns like "1640s"
-      const timeQuery = decadeMatch || 
-                     message.toLowerCase().includes('century') ||
-                     message.match(/\b(\d{4})-(\d{4})\b/); // Match year ranges
-      
-      // Apply special processing for time periods to avoid modern signage
-      if (timeQuery) {
-        console.log('Detected time period query, applying special processing');
-        
-        // Handle specific decade queries (e.g., "1640s")
-        if (decadeMatch) {
-          const decade = decadeMatch[1];
-          const yearStart = decade;
-          const yearEnd = parseInt(decade) + 9;
-          
-          if (message.toLowerCase().includes('rembrandt')) {
-            console.log(`Detected Rembrandt ${decade}s query, using optimized search terms`);
-            searchTerms = `Rembrandt ${yearStart}-${yearEnd} painting -modern -signage -COVID -social -distancing -meter -meters`;
-          } else {
-            // Add time range and exclusion terms to the search
-            searchTerms = `${searchTerms} ${yearStart}-${yearEnd} -modern -signage -COVID -distancing`;
-          }
-        } else {
-          // For other time period queries, just add exclusion terms
-          searchTerms = `${searchTerms} -modern -signage -COVID -social -distancing -meter -meters`;
-        }
-      }
-      
-      // Search for artworks with pagination support
-      console.log(`Searching Rijksmuseum API for: "${searchTerms}" (page ${page})`);
-      
-      // Create pagination parameters
-      const pageNum = parseInt(page) || 1;
-      
-      // Fetch results with proper pagination parameters
-      const artworks = await searchArtworks(searchTerms, { 
-        p: pageNum  // This is the actual Rijksmuseum API parameter for page
-      });
       
       // Get the total number of results from API by doing a count-only request
       const countResponse = await searchArtworks(searchTerms, { 
@@ -550,27 +534,8 @@ Example conversions:
         imgonly: true
       });
       
-      // Determine if there are more results beyond this page
-      const resultsPerPage = 15; // Number of results per page
-      const pageStart = (pageNum - 1) * resultsPerPage + 1;
-      const pageEnd = pageStart + artworks.length - 1;
-      
-      console.log(`Found ${artworks.length} artworks for search term: "${searchTerms}" (page ${page}, items ${pageStart}-${pageEnd})`);
-      
-      // Filter artworks by artist if an artist filter is set
-      if (artistFilter) {
-        console.log(`Filtering results to show only works by "${artistFilter}"`);
-        const filteredArtworks = artworks.filter(artwork => 
-          artwork.principalOrFirstMaker && 
-          artwork.principalOrFirstMaker.toLowerCase().includes(artistFilter.toLowerCase())
-        );
-        
-        console.log(`Filtered from ${artworks.length} to ${filteredArtworks.length} artworks`);
-        responseObject.artworks = filteredArtworks;
-      } else {
-        // No filter applied
-        responseObject.artworks = artworks;
-      }
+      // Store the filtered artworks in the response object
+      responseObject.artworks = artworks;
     
     console.log('Preparing response with:', artworks.length, 'artworks');
     
