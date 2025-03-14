@@ -7,19 +7,48 @@ services:
       dockerfile: Dockerfile
     container_name: rijksmuseum-interface
     ports:
-      - "3002:3002"
+      - "${PORT:-3002}:${PORT:-3002}"
     environment:
-      # These values will be overridden by your .env file if you use
-      # docker-compose --env-file .env up
-      - PORT=3002
+      # These values will be overridden by your .env file
+      - PORT=${PORT:-3002}
       - HOST=0.0.0.0
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3002}
       - HOSTNAME=${HOSTNAME:-}
+      - MCP_SERVER_URL=http://mcp-server:${MCP_PORT:-3003}
     restart: unless-stopped
-    # For Unraid, you might want to add specific labels
-    # See: https://docs.docker.com/compose/compose-file/compose-file-v3/#labels
+    depends_on:
+      - mcp-server
+    networks:
+      - rijksmuseum-network
     labels:
       - "com.github.jdhill777.description=Rijksmuseum Art Explorer with Claude AI"
       - "com.github.jdhill777.service=rijksmuseum-interface"
+
+  mcp-server:
+    build:
+      context: ./rijksmuseum-mcp
+      dockerfile: Dockerfile
+    container_name: rijksmuseum-mcp-server
+    ports:
+      - "${MCP_PORT:-3003}:${MCP_PORT:-3003}"
+    environment:
+      - PORT=${MCP_PORT:-3003}
+      - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
+    volumes:
+      # Optional: Mount for logs or other persistent data
+      - mcp-data:/app/data
+    restart: unless-stopped
+    networks:
+      - rijksmuseum-network
+    labels:
+      - "com.github.jdhill777.description=Rijksmuseum MCP Server"
+      - "com.github.jdhill777.service=rijksmuseum-mcp"
+
+networks:
+  rijksmuseum-network:
+    driver: bridge
+
+volumes:
+  mcp-data:
