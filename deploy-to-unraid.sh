@@ -123,6 +123,11 @@ else
     fi
 fi
 
+# Ensure existing containers are stopped and removed
+echo -e "${BLUE}Stopping and removing any existing containers...${NC}"
+docker stop rijksmuseum-interface rijksmuseum-mcp-server rijksmuseum-ai-interface rijksmuseum-ai-mcp-server 2>/dev/null || true
+docker rm rijksmuseum-interface rijksmuseum-mcp-server rijksmuseum-ai-interface rijksmuseum-ai-mcp-server 2>/dev/null || true
+
 # Deploy with docker-compose
 echo -e "${BLUE}Building and starting services with docker-compose...${NC}"
 docker-compose down || true # Bring down any existing services
@@ -130,7 +135,7 @@ docker-compose build --no-cache # Rebuild images to ensure latest code
 docker-compose up -d # Start services in detached mode
 
 # Check if services started successfully
-if docker ps | grep -q "rijksmuseum-interface" && docker ps | grep -q "rijksmuseum-mcp-server"; then
+if docker ps | grep -q "rijksmuseum-ai-interface" && docker ps | grep -q "rijksmuseum-ai-mcp-server"; then
     echo -e "${GREEN}Services started successfully!${NC}"
     
     # Get server IP for access URL
@@ -144,21 +149,21 @@ if docker ps | grep -q "rijksmuseum-interface" && docker ps | grep -q "rijksmuse
     # Show container logs
     echo ""
     echo -e "${BLUE}Web Interface Logs:${NC}"
-    docker logs --tail 10 rijksmuseum-interface
+    docker logs --tail 10 rijksmuseum-ai-interface
     
     echo ""
     echo -e "${BLUE}MCP Server Logs:${NC}"
-    docker logs --tail 10 rijksmuseum-mcp-server
+    docker logs --tail 10 rijksmuseum-ai-mcp-server
 else
     echo -e "${RED}Error: One or more services failed to start${NC}"
     echo "Please check the logs:"
-    echo "  docker logs rijksmuseum-interface"
-    echo "  docker logs rijksmuseum-mcp-server"
+echo "  docker logs rijksmuseum-ai-interface"
+echo "  docker logs rijksmuseum-ai-mcp-server"
 fi
 
 echo ""
 echo -e "${BLUE}Useful commands:${NC}"
-echo -e "  View logs: ${YELLOW}docker logs -f rijksmuseum-interface${NC}"
+echo -e "  View logs: ${YELLOW}docker logs -f rijksmuseum-ai-interface${NC}"
 echo -e "  Restart services: ${YELLOW}docker-compose restart${NC}"
 echo -e "  Stop services: ${YELLOW}docker-compose down${NC}"
 echo -e "  Update and rebuild: ${YELLOW}./deploy-to-unraid.sh${NC}"

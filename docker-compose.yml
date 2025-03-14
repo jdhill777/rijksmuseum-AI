@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: rijksmuseum-interface
+    container_name: rijksmuseum-ai-interface
     ports:
       - "${PORT:-3002}:${PORT:-3002}"
     environment:
@@ -28,7 +28,7 @@ services:
     build:
       context: ./rijksmuseum-mcp
       dockerfile: Dockerfile
-    container_name: rijksmuseum-mcp-server
+    container_name: rijksmuseum-ai-mcp-server
     ports:
       - "${MCP_PORT:-3003}:${MCP_PORT:-3003}"
     environment:
