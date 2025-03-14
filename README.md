@@ -41,7 +41,7 @@ This design keeps API keys secure on the server side and simplifies the frontend
    ```
    ANTHROPIC_API_KEY=your-anthropic-key-here
    RIJKSMUSEUM_API_KEY=your-rijksmuseum-key-here
-   PORT=3000
+   PORT=3000                  # You can change this to any port number you prefer!
    HOST=0.0.0.0
    ALLOWED_ORIGINS=
    CLOUDFLARE_HOSTNAME=
@@ -55,26 +55,30 @@ This design keeps API keys secure on the server side and simplifies the frontend
    - Get your Anthropic API key from: [https://console.anthropic.com/](https://console.anthropic.com/)
    - Get your Rijksmuseum API key from: [https://data.rijksmuseum.nl/object-metadata/api/](https://data.rijksmuseum.nl/object-metadata/api/)
 4. Configure server options in the `.env` file:
-   - `PORT`: The port the server will listen on (defaults to 3000)
-   - `HOST`: The host/IP address to bind to
-     - Use `0.0.0.0` to make the server accessible from other devices on the network
-     - Use `127.0.0.1` or `localhost` to restrict access to only your computer
-   - `ALLOWED_ORIGINS`: Comma-separated list of allowed origins for CORS
-     - Leave empty to use default origins
-     - Example: `http://localhost:3000,https://example.com`
-   - `CLOUDFLARE_HOSTNAME`: If using Cloudflare as a proxy, set this to your domain name
+   - `PORT`: ⚡ **Pick any port number you want!** (default is 3000)
+     - This is the "door number" your app will use on your computer
+     - If 3000 is already in use, try 3001, 8080, or any other number
+   - `HOST`: The network access setting
+     - Use `0.0.0.0` to allow access from other devices like phones or tablets
+     - Use `127.0.0.1` or `localhost` for private access (your computer only)
+   - `ALLOWED_ORIGINS`: Which websites can access your app
+     - For personal use, you can leave this empty
+     - Example: `http://localhost:YOUR_PORT,https://example.com`
+   - `CLOUDFLARE_HOSTNAME`: Your custom domain name if using Cloudflare
      - Example: `art.example.com`
-     - This helps the app detect when it's being accessed through Cloudflare
+     - Skip this if you're not using Cloudflare
 
 5. Start the server:
    ```
    npm start
    ```
 6. Access the application:
-   - On the same computer: http://localhost:3000
-   - From other devices (like mobile phones): http://YOUR_COMPUTER_IP:3000
+   - On the same computer: http://localhost:YOUR_PORT
+     - Replace YOUR_PORT with the port number you chose in the `.env` file (e.g., http://localhost:3000)
+   - From other devices (like mobile phones or tablets): http://YOUR_COMPUTER_IP:YOUR_PORT
      - Replace YOUR_COMPUTER_IP with your computer's IP address
-     - Both devices must be on the same network
+     - Replace YOUR_PORT with your chosen port number
+     - Both devices must be connected to the same WiFi network
 
 ## Mobile Access Instructions
 
@@ -85,8 +89,10 @@ To access the application from a mobile device:
    - On macOS: Run `ipconfig getifaddr en0` in Terminal
    - On Windows: Run `ipconfig` in Command Prompt and look for IPv4 Address
    - On Linux: Run `hostname -I` in Terminal
-3. On your mobile device, open a browser and enter: http://YOUR_COMPUTER_IP:3000
-4. If you have trouble connecting, check your computer's firewall settings to ensure it allows connections on port 3000
+3. On your mobile device, open a browser and enter: http://YOUR_COMPUTER_IP:YOUR_PORT
+   - Replace YOUR_COMPUTER_IP with the IP address you found
+   - Replace YOUR_PORT with the port number you chose in your `.env` file
+4. If you have trouble connecting, check your computer's firewall settings to ensure it allows connections on your chosen port
 
 ## Example Queries
 
@@ -117,17 +123,17 @@ Try asking about artworks in various ways:
 
 ### Local Development
 ```
-PORT=3000
-HOST=0.0.0.0
-ALLOWED_ORIGINS=http://localhost:3000
-CLOUDFLARE_HOSTNAME=
+PORT=8080                        # Any port number you prefer!
+HOST=0.0.0.0                     # Allow access from other devices on your network
+ALLOWED_ORIGINS=http://localhost:8080  # Match your chosen port number here
+CLOUDFLARE_HOSTNAME=             # Leave empty
 ```
 
 ### Cloudflare Tunnel
 ```
-PORT=3000
-HOST=0.0.0.0
-ALLOWED_ORIGINS=http://localhost:3000,https://art.example.com,http://art.example.com
+PORT=9000                        # Any port number you prefer!
+HOST=0.0.0.0                     # Allow access from any device
+ALLOWED_ORIGINS=http://localhost:9000,https://art.example.com,http://art.example.com
 CLOUDFLARE_HOSTNAME=art.example.com
 ```
 
@@ -135,14 +141,24 @@ CLOUDFLARE_HOSTNAME=art.example.com
 
 If you encounter connectivity issues:
 
-1. **Host Configuration**: Make sure HOST is set to `0.0.0.0` in your `.env` file to allow external connections
-2. **Port Configuration**: Ensure the PORT in your `.env` file is not already in use by another application
-3. **Firewall Settings**: Ensure your firewall allows incoming connections on your chosen port
-4. **Network Issues**: Verify both devices are on the same network
-5. **CORS Issues**: If accessing from a different domain, add that domain to ALLOWED_ORIGINS
-6. **Cloudflare Configuration**: If using Cloudflare, ensure CLOUDFLARE_HOSTNAME is set correctly
-7. **Server Logs**: Check the terminal where the server is running for error messages
-8. **Restart Server**: Try stopping and restarting the server
+1. **Wrong Port Number**: Make sure you're using the same port number in:
+   - Your `.env` file (the PORT setting)
+   - Your browser URL (the number after the colon)
+   - Your ALLOWED_ORIGINS setting
+
+2. **Port Already in Use**: If you see an error like "port already in use":
+   - Try a different port number in your `.env` file
+   - Common alternatives: 8080, 5000, 3001, 4000
+
+3. **Can't Connect from Phone/Tablet**: 
+   - Make sure HOST is set to `0.0.0.0` in your `.env` file
+   - Ensure both devices are on the same WiFi network
+   - Check that your firewall allows connections on your chosen port
+
+4. **App Not Working Correctly**:
+   - Make sure your API keys are correctly entered in the `.env` file
+   - Check the terminal for any error messages
+   - Try stopping the server (press Ctrl+C in the terminal) and restarting it
 
 ## Technologies Used
 
