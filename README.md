@@ -169,6 +169,81 @@ If you encounter connectivity issues:
 - APIs: Rijksmuseum API, Anthropic Claude AI
 - Utilities: Translation, CORS support
 
+## Docker Installation
+
+You can run this application in a Docker container, which is especially useful for running on Unraid or other server platforms.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your system
+- For Unraid: Docker support enabled in Unraid settings
+
+### Option 1: Using Docker Compose (Recommended)
+
+1. Make sure your `.env` file is set up correctly with your API keys and configuration
+2. Build and start the container:
+   ```bash
+   docker-compose up -d
+   ```
+3. Access the application at http://YOUR_SERVER_IP:3000 (or your configured port)
+4. To stop the container:
+   ```bash
+   docker-compose down
+   ```
+
+### Option 2: Using Docker Directly
+
+1. Build the Docker image:
+   ```bash
+   docker build -t rijksmuseum-interface .
+   ```
+2. Run the container:
+   ```bash
+   docker run -d \
+     -p 3000:3000 \
+     -e ANTHROPIC_API_KEY=your_api_key \
+     -e RIJKSMUSEUM_API_KEY=your_api_key \
+     -e PORT=3000 \
+     -e HOST=0.0.0.0 \
+     -e ALLOWED_ORIGINS=http://your-server-ip:3000 \
+     --name rijksmuseum-interface \
+     rijksmuseum-interface
+   ```
+   
+### Running on Unraid
+
+1. On your Unraid server, go to the Docker tab
+2. Click "Add Container"
+3. Use one of these methods:
+   
+   **Method A: Use a pre-built image** (if you've pushed to Docker Hub)
+   - Repository: `yourusername/rijksmuseum-interface`
+   - Port Mappings: Host `3000`, Container `3000`
+   
+   **Method B: Build from local files**
+   - Navigate to where you've saved the project files on your Unraid server
+   - Run the docker-compose command as shown in Option 1
+   
+4. Add Environment Variables:
+   - ANTHROPIC_API_KEY=your_api_key
+   - RIJKSMUSEUM_API_KEY=your_api_key
+   - (others as needed)
+   
+5. Click "Apply" to create and start the container
+
+### Environment Variables
+
+The Docker container uses the following environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| ANTHROPIC_API_KEY | Your Anthropic API key | None (Required) |
+| RIJKSMUSEUM_API_KEY | Your Rijksmuseum API key | None (Required) |
+| PORT | The port the app runs on | 3000 |
+| HOST | Host to bind to | 0.0.0.0 |
+| ALLOWED_ORIGINS | CORS allowed origins | http://localhost:3000 |
+| HOSTNAME | Custom domain name if used | None |
+
 ## Security Considerations
 
 1. **API Key Management**:
@@ -176,6 +251,7 @@ If you encounter connectivity issues:
    - If you believe your API keys have been exposed, rotate them immediately:
      - Anthropic: [https://console.anthropic.com/keys](https://console.anthropic.com/keys)
      - Rijksmuseum: [https://data.rijksmuseum.nl/object-metadata/api/](https://data.rijksmuseum.nl/object-metadata/api/)
+   - When using Docker, prefer to use environment variables or Docker secrets instead of mounting the .env file
 
 2. **CORS Configuration**:
    - The `ALLOWED_ORIGINS` setting restricts which domains can access your API
@@ -184,3 +260,4 @@ If you encounter connectivity issues:
 3. **Local Network Exposure**:
    - When running on `0.0.0.0`, the server is accessible to all devices on your network
    - For increased security in development, use `127.0.0.1` to restrict access to your computer only
+   - On Unraid, consider using Unraid's built-in reverse proxy or configuring a firewall

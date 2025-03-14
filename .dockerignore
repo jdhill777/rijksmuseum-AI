@@ -1,0 +1,29 @@
+# Node dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Environment variables and sensitive info
+.env
+.env.*
+!.env.example
+
+# Git 
+.git
+.gitignore
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.swp
+*.swo
+tmp/
+temp/
+
+# IDE specific files
+.idea/
+.vscode/
+*.sublime-*

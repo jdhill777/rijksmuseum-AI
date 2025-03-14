@@ -35,3 +35,10 @@ test-*.html
 test-*.js
 *-demo.js
 restart-*.js
+
+# Docker files
+.docker
+docker-compose.override.yml
+
+# Container runtime files
+docker-volumes/
