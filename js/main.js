@@ -294,8 +294,8 @@ function enterFullscreen() {
     // Don't set caption text in fullscreen mode
     fullscreenCaption.style.display = 'none';
     
-    // Prevent scrolling while in fullscreen mode
-    document.body.classList.add('fullscreen-active');
+    // Set longer transition for a smoother fade-in experience
+    fullscreenContainer.style.transition = 'opacity 0.8s ease-in';
     
     // Configure the fullscreen container for proper viewport centering
     // Fixed positioning removes the container from the document flow
@@ -312,13 +312,16 @@ function enterFullscreen() {
     fullscreenContainer.style.justifyContent = 'center';
     fullscreenContainer.style.alignItems = 'center';
     fullscreenContainer.style.zIndex = '9999';
+    fullscreenContainer.style.opacity = '0'; // Start with opacity 0
     
-    // Prepare fullscreen image - ensure it stays in the viewport
+    // Prepare fullscreen image with transition for smooth scaling
     fullscreenImage.style.maxWidth = '95vw';
     fullscreenImage.style.maxHeight = '85vh';
     fullscreenImage.style.objectFit = 'contain';
     fullscreenImage.style.margin = '0 auto'; // Center horizontally
     fullscreenImage.style.display = 'block'; // Ensure proper display mode
+    fullscreenImage.style.transition = 'transform 0.6s ease-in';
+    fullscreenImage.style.transform = 'scale(0.95)'; // Start slightly smaller
     
     // Position fullscreen controls at the top
     const controls = document.querySelector('.fullscreen-controls');
@@ -327,22 +330,44 @@ function enterFullscreen() {
         controls.style.top = '20px';
         controls.style.right = '20px';
         controls.style.zIndex = '10000';
+        controls.style.opacity = '0'; // Start with controls hidden
+        controls.style.transition = 'opacity 0.6s ease-in';
     }
     
-    // Force a reflow so the transition will work
-    window.getComputedStyle(fullscreenContainer).opacity;
+    // First make container visible but with opacity 0
+    fullscreenContainer.style.display = 'flex';
     
-    // Add active class to trigger transitions
-    fullscreenContainer.classList.add('active');
+    // Prevent scrolling while in fullscreen mode
+    document.body.classList.add('fullscreen-active');
     
     // Ensure footer is not visible in fullscreen
     footer.style.zIndex = '1';
     
-    // Once fullscreen is activated, make sure we're at the top of the viewport
+    // Phase 1: Start smooth fade in after a very short delay
     setTimeout(() => {
-        // Reset any scroll that might have happened
-        window.scrollTo(0, 0);
-        console.log('Reset scroll position in fullscreen mode');
+        // Force a reflow so the transition will work
+        window.getComputedStyle(fullscreenContainer).opacity;
+        
+        // Fade in container
+        fullscreenContainer.style.opacity = '1';
+        
+        // Scale up image to full size
+        fullscreenImage.style.transform = 'scale(1)';
+        
+        // Fade in controls
+        if (controls) {
+            controls.style.opacity = '1';
+        }
+        
+        // Phase 2: Reset any scroll that might have happened
+        setTimeout(() => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            console.log('Reset scroll position in fullscreen mode');
+        }, 100);
+        
     }, 50);
 }
     
