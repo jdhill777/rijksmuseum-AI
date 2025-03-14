@@ -2,6 +2,20 @@
 
 This application allows you to explore artworks from the Rijksmuseum collection through natural language queries, powered by Claude AI.
 
+## Architecture
+
+This is a standalone web application with:
+
+- **Backend**: Node.js/Express server that communicates directly with external APIs
+- **Frontend**: Simple HTML/CSS/JavaScript interface
+
+The application uses a direct integration architecture:
+1. Your Express server makes API calls to Rijksmuseum's API using your API key
+2. Your server also makes direct API calls to Anthropic's Claude API
+3. The frontend communicates only with your Express server, not directly with external APIs
+
+This design keeps API keys secure on the server side and simplifies the frontend implementation.
+
 ## Features
 
 - **Natural Language Search**: Ask about artworks in plain English
@@ -32,6 +46,12 @@ This application allows you to explore artworks from the Rijksmuseum collection 
    ALLOWED_ORIGINS=
    CLOUDFLARE_HOSTNAME=
    ```
+
+   **⚠️ SECURITY WARNING**:
+   - Never commit your `.env` file to version control
+   - Regularly rotate your API keys, especially if they might have been exposed
+   - Use different API keys for development and production
+   - Consider using environment variables in production deployments instead of `.env` files
    - Get your Anthropic API key from: [https://console.anthropic.com/](https://console.anthropic.com/)
    - Get your Rijksmuseum API key from: [https://data.rijksmuseum.nl/object-metadata/api/](https://data.rijksmuseum.nl/object-metadata/api/)
 4. Configure server options in the `.env` file:
@@ -130,3 +150,19 @@ If you encounter connectivity issues:
 - Backend: Node.js, Express
 - APIs: Rijksmuseum API, Anthropic Claude AI
 - Utilities: Translation, CORS support
+
+## Security Considerations
+
+1. **API Key Management**:
+   - The `.env` file is excluded from version control in `.gitignore`
+   - If you believe your API keys have been exposed, rotate them immediately:
+     - Anthropic: [https://console.anthropic.com/keys](https://console.anthropic.com/keys)
+     - Rijksmuseum: [https://data.rijksmuseum.nl/object-metadata/api/](https://data.rijksmuseum.nl/object-metadata/api/)
+
+2. **CORS Configuration**:
+   - The `ALLOWED_ORIGINS` setting restricts which domains can access your API
+   - In production, explicitly list all allowed origins rather than using wildcards
+
+3. **Local Network Exposure**:
+   - When running on `0.0.0.0`, the server is accessible to all devices on your network
+   - For increased security in development, use `127.0.0.1` to restrict access to your computer only
