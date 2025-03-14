@@ -14,6 +14,7 @@ services:
       - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3002}
       - HOSTNAME=${HOSTNAME:-}
+      # Note: Within Docker network, we use the service name (mcp-server) to connect to the MCP server
       - MCP_SERVER_URL=http://mcp-server:${MCP_PORT:-3003}
     restart: unless-stopped
     depends_on:

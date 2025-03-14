@@ -76,8 +76,37 @@ EOF
 echo -e "${GREEN}MCP server Dockerfile created${NC}"
 
 # Configure .env file
+echo -e "${BLUE}Setting up environment variables...${NC}"
+
+# Ask for API keys if not already configured
+prompt_for_api_key() {
+    local key_name=$1
+    local key_var=$2
+    local key_url=$3
+    local current_value=$(grep -oP "${key_var}=\K[^\s]+" .env 2>/dev/null || echo "")
+    
+    if [[ -z "$current_value" || "$current_value" == "your_api_key_here" || "$current_value" == "your_"*"_key_here" ]]; then
+        echo -e "${YELLOW}${key_name} is required.${NC}"
+        echo -e "Get your key from: ${BLUE}${key_url}${NC}"
+        read -p "Enter your ${key_name}: " NEW_KEY </dev/tty
+        if [[ -n "$NEW_KEY" ]]; then
+            if grep -q "${key_var}=" .env 2>/dev/null; then
+                sed -i "s|${key_var}=.*|${key_var}=${NEW_KEY}|" .env
+            else
+                echo "${key_var}=${NEW_KEY}" >> .env
+            fi
+            echo -e "${GREEN}${key_name} updated${NC}"
+        else
+            echo -e "${YELLOW}Warning: No ${key_name} provided. The application might not work correctly.${NC}"
+        fi
+    else
+        echo -e "${GREEN}${key_name} already configured${NC}"
+    fi
+}
+
+# Create a new .env file if it doesn't exist
 if [ ! -f ".env" ]; then
-    echo -e "${YELLOW}No .env file found. Creating template...${NC}"
+    echo -e "${YELLOW}No .env file found. Creating new configuration...${NC}"
     cat > .env << EOF
 # Rijksmuseum Art Explorer configuration
 
@@ -98,30 +127,42 @@ ALLOWED_ORIGINS=http://localhost:3002
 # Server hostname (optional, for when behind reverse proxy)
 HOSTNAME=
 EOF
-    
     echo -e "${GREEN}.env file created${NC}"
-    echo -e "${YELLOW}Please edit the .env file to add your API keys${NC}"
-    read -p "Press Enter to edit the .env file, or Ctrl+C to exit and edit later..." </dev/tty
-    nano .env
-else
-    echo -e "${GREEN}.env file found${NC}"
-    
-    # Check if the .env file has the required keys
-    if ! grep -q "ANTHROPIC_API_KEY" .env || ! grep -q "RIJKSMUSEUM_API_KEY" .env; then
-        echo -e "${YELLOW}Warning: Your .env file may be missing required API keys${NC}"
-        echo -e "Required keys: ANTHROPIC_API_KEY, RIJKSMUSEUM_API_KEY"
-        read -p "Do you want to edit the .env file now? (y/n): " EDIT_ENV </dev/tty
-        if [[ $EDIT_ENV =~ ^[Yy]$ ]]; then
-            nano .env
-        fi
-    fi
-    
-    # Check if MCP_PORT is in the .env file, add if missing
-    if ! grep -q "MCP_PORT" .env; then
-        echo -e "${YELLOW}Adding MCP_PORT=3003 to .env file${NC}"
-        echo "MCP_PORT=3003" >> .env
-    fi
 fi
+
+# Ensure all required variables are set
+prompt_for_api_key "Anthropic API Key" "ANTHROPIC_API_KEY" "https://console.anthropic.com/"
+prompt_for_api_key "Rijksmuseum API Key" "RIJKSMUSEUM_API_KEY" "https://data.rijksmuseum.nl/object-metadata/api/"
+
+# Set port configuration
+echo -e "${BLUE}Configuring network settings...${NC}"
+
+# Get current port values or set defaults
+CURRENT_PORT=$(grep -oP "PORT=\K[0-9]+" .env 2>/dev/null || echo "3002")
+CURRENT_MCP_PORT=$(grep -oP "MCP_PORT=\K[0-9]+" .env 2>/dev/null || echo "3003")
+
+# Ask for port configuration
+read -p "Web server port [${CURRENT_PORT}]: " NEW_PORT </dev/tty
+PORT=${NEW_PORT:-$CURRENT_PORT}
+
+read -p "MCP server port [${CURRENT_MCP_PORT}]: " NEW_MCP_PORT </dev/tty
+MCP_PORT=${NEW_MCP_PORT:-$CURRENT_MCP_PORT}
+
+# Update port settings in .env
+sed -i "s/^PORT=.*/PORT=${PORT}/" .env
+sed -i "s/^MCP_PORT=.*/MCP_PORT=${MCP_PORT}/" .env
+
+# Set HOST and create MCP_SERVER_URL if missing
+sed -i "s/^HOST=.*/HOST=0.0.0.0/" .env
+if ! grep -q "MCP_SERVER_URL=" .env; then
+    echo "MCP_SERVER_URL=http://localhost:${MCP_PORT}" >> .env
+else
+    sed -i "s|^MCP_SERVER_URL=.*|MCP_SERVER_URL=http://localhost:${MCP_PORT}|" .env
+fi
+
+echo -e "${GREEN}Environment configured:${NC}"
+echo -e "  Web server port: ${BLUE}${PORT}${NC}"
+echo -e "  MCP server port: ${BLUE}${MCP_PORT}${NC}"
 
 # Ensure existing containers are stopped and removed
 echo -e "${BLUE}Stopping and removing any existing containers...${NC}"
