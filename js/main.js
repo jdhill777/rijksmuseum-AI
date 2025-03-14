@@ -344,10 +344,14 @@ function exitFullscreen() {
     }, 400); // Match the transition duration
 }
 
-    // Helper function for fetch with timeout
-    const fetchWithTimeout = async (url, options, timeout = 30000) => {
+    // Helper function for fetch with timeout - 60 second timeout for mobile
+    const fetchWithTimeout = async (url, options, timeout = 60000) => {
+        console.log(`Fetch request to ${url} with timeout ${timeout}ms`);
         const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
+        const id = setTimeout(() => {
+            console.log(`Request timeout reached for ${url}`);
+            controller.abort();
+        }, timeout);
         
         try {
             const response = await fetch(url, {
@@ -355,9 +359,11 @@ function exitFullscreen() {
                 signal: controller.signal
             });
             clearTimeout(id);
+            console.log(`Fetch completed successfully for ${url}`);
             return response;
         } catch (error) {
             clearTimeout(id);
+            console.error(`Fetch error for ${url}:`, error.name, error.message);
             throw error;
         }
     };
