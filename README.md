@@ -61,12 +61,11 @@ This design keeps API keys secure on the server side and simplifies the frontend
    - `HOST`: The network access setting
      - Use `0.0.0.0` to allow access from other devices like phones or tablets
      - Use `127.0.0.1` or `localhost` for private access (your computer only)
-   - `ALLOWED_ORIGINS`: Which websites can access your app
-     - For personal use, you can leave this empty
-     - Example: `http://localhost:YOUR_PORT,https://example.com`
-   - `CLOUDFLARE_HOSTNAME`: Your custom domain name if using Cloudflare
-     - Example: `art.example.com`
-     - Skip this if you're not using Cloudflare
+   - `ALLOWED_ORIGINS`: Which websites can access your app (important for security)
+     - For personal use on your own computer, you can leave this empty
+     - If hosting online, include your domain: `http://localhost:YOUR_PORT,https://your-domain.com`
+   - `CLOUDFLARE_HOSTNAME`: (Optional - only needed if using Cloudflare)
+     - Most users can leave this blank
 
 5. Start the server:
    ```
@@ -121,20 +120,20 @@ Try asking about artworks in various ways:
 
 ## Configuration Examples
 
-### Local Development
+### Basic Setup (Most Users)
 ```
 PORT=8080                        # Any port number you prefer!
 HOST=0.0.0.0                     # Allow access from other devices on your network
 ALLOWED_ORIGINS=http://localhost:8080  # Match your chosen port number here
-CLOUDFLARE_HOSTNAME=             # Leave empty
+CLOUDFLARE_HOSTNAME=             # Leave empty (you don't need this)
 ```
 
-### Cloudflare Tunnel
+### Advanced: Hosting Online
 ```
 PORT=9000                        # Any port number you prefer!
 HOST=0.0.0.0                     # Allow access from any device
-ALLOWED_ORIGINS=http://localhost:9000,https://art.example.com,http://art.example.com
-CLOUDFLARE_HOSTNAME=art.example.com
+ALLOWED_ORIGINS=http://localhost:9000,https://your-domain.com
+CLOUDFLARE_HOSTNAME=             # Only needed if using Cloudflare
 ```
 
 ## Troubleshooting
