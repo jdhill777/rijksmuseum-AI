@@ -414,13 +414,19 @@ Return a JSON object with exactly these properties:
     // Step 2: Apply artist filtering and special search term handling
     let artistFilter = null;
     
-    // Handle special thematic queries first
+    // Handle special thematic queries with direct mapping to known working terms
+    // These are hardcoded mappings to terms that we know work well with the Rijksmuseum API
     if (message.toLowerCase().includes('biblical scene') || 
         message.toLowerCase().includes('bible scene') || 
         message.toLowerCase().includes('religious scene')) {
-      console.log('Detected biblical scenes query, applying special handling');
-      // Use simpler terms that are known to work with the API
-      searchTerms = "biblical scene painting";
+      console.log('Detected biblical scenes query, applying hardcoded handler');
+      // Use terms that are verified to work with the API
+      searchTerms = "biblical Rembrandt painting";
+    } else if (message.toLowerCase().includes('musical instrument') || 
+              message.toLowerCase().includes('music') || 
+              message.toLowerCase().includes('portraits with musical')) {
+      console.log('Detected musical instruments query, applying hardcoded handler');
+      searchTerms = "music instrument portrait";
     }
     
     // Detect specific artists
