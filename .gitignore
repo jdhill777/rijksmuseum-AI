@@ -1,5 +1,4 @@
-# Environment variables
-.env
+# No longer ignoring .env files - template provided for direct use
 
 # Dependency directories
 node_modules/
