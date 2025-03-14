@@ -15,14 +15,21 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0'; // Default to all network interfaces
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Middleware - Enhanced CORS for external access including Cloudflare tunnel
+// Extract allowed origins from environment or use defaults
+const allowedOriginsEnv = process.env.ALLOWED_ORIGINS || '';
+const allowedOrigins = allowedOriginsEnv
+  ? allowedOriginsEnv.split(',')
+  : ['http://localhost:' + PORT, 'https://art.bandicoot.media', 'http://art.bandicoot.media', '*'];
+
+// Middleware - Enhanced CORS for external access
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://art.bandicoot.media', 'http://art.bandicoot.media', '*'], 
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -85,10 +92,9 @@ app.use((req, res, next) => {
 
 // Add specific CORS headers for all responses
 app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:3000', 'https://art.bandicoot.media', 'http://art.bandicoot.media'];
   const origin = req.headers.origin;
   
-  if (allowedOrigins.includes(origin)) {
+  if (origin && allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   } else {
     res.header('Access-Control-Allow-Origin', '*');
@@ -681,9 +687,13 @@ app.get('*', (req, res) => {
   res.sendFile(join(__dirname, 'index.html'));
 });
 
-// Start server - listen on all interfaces, not just localhost
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+// Start server
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on ${HOST}:${PORT}`);
   console.log(`Local access: http://localhost:${PORT}`);
-  console.log(`For external access, use your device's IP address and port ${PORT}`);
+  
+  // Only show this message if we're binding to all interfaces
+  if (HOST === '0.0.0.0') {
+    console.log(`For external access, use your device's IP address and port ${PORT}`);
+  }
 });

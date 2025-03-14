@@ -24,14 +24,25 @@ This application allows you to explore artworks from the Rijksmuseum collection 
    ANTHROPIC_API_KEY=your-anthropic-key-here
    RIJKSMUSEUM_API_KEY=your-rijksmuseum-key-here
    PORT=3000
+   HOST=0.0.0.0
+   ALLOWED_ORIGINS=
    ```
    - Get your Anthropic API key from: [https://console.anthropic.com/](https://console.anthropic.com/)
    - Get your Rijksmuseum API key from: [https://data.rijksmuseum.nl/object-metadata/api/](https://data.rijksmuseum.nl/object-metadata/api/)
-4. Start the server:
+4. Configure server options in the `.env` file:
+   - `PORT`: The port the server will listen on (defaults to 3000)
+   - `HOST`: The host/IP address to bind to
+     - Use `0.0.0.0` to make the server accessible from other devices on the network
+     - Use `127.0.0.1` or `localhost` to restrict access to only your computer
+   - `ALLOWED_ORIGINS`: Comma-separated list of allowed origins for CORS
+     - Leave empty to use default origins
+     - Example: `http://localhost:3000,https://example.com`
+
+5. Start the server:
    ```
    npm start
    ```
-5. Access the application:
+6. Access the application:
    - On the same computer: http://localhost:3000
    - From other devices (like mobile phones): http://YOUR_COMPUTER_IP:3000
      - Replace YOUR_COMPUTER_IP with your computer's IP address
@@ -78,10 +89,13 @@ Try asking about artworks in various ways:
 
 If you encounter connectivity issues:
 
-1. **Firewall Settings**: Ensure your firewall allows incoming connections on port 3000
-2. **Network Issues**: Verify both devices are on the same network
-3. **Server Logs**: Check the terminal where the server is running for error messages
-4. **Restart Server**: Try stopping and restarting the server
+1. **Host Configuration**: Make sure HOST is set to `0.0.0.0` in your `.env` file to allow external connections
+2. **Port Configuration**: Ensure the PORT in your `.env` file is not already in use by another application
+3. **Firewall Settings**: Ensure your firewall allows incoming connections on your chosen port
+4. **Network Issues**: Verify both devices are on the same network
+5. **CORS Issues**: If accessing from a different domain, add that domain to ALLOWED_ORIGINS
+6. **Server Logs**: Check the terminal where the server is running for error messages
+7. **Restart Server**: Try stopping and restarting the server
 
 ## Technologies Used
 
