@@ -287,55 +287,33 @@ function enterFullscreen() {
     savedScrollPosition = window.scrollY || window.pageYOffset;
     console.log('Entering fullscreen, saving scroll position:', savedScrollPosition);
     
-    // Set the image source
+    // Set the image source - ensure it loads before transitioning
+    fullscreenImage.onload = function() {
+        console.log('Fullscreen image loaded successfully');
+    };
+    fullscreenImage.onerror = function() {
+        console.error('Failed to load fullscreen image');
+    };
     fullscreenImage.src = modalImage.src;
     fullscreenImage.alt = modalImage.alt;
     
     // Don't set caption text in fullscreen mode
     fullscreenCaption.style.display = 'none';
     
-    // Set longer transition for a smoother fade-in experience
-    fullscreenContainer.style.transition = 'opacity 0.8s ease-in';
-    
     // Configure the fullscreen container for proper viewport centering
-    // Fixed positioning removes the container from the document flow
     fullscreenContainer.style.position = 'fixed';
     fullscreenContainer.style.top = '0';
     fullscreenContainer.style.left = '0';
     fullscreenContainer.style.right = '0';
     fullscreenContainer.style.bottom = '0';
-    fullscreenContainer.style.width = '100vw'; // Use viewport width
-    fullscreenContainer.style.height = '100vh'; // Use viewport height
+    fullscreenContainer.style.width = '100vw';
+    fullscreenContainer.style.height = '100vh';
     fullscreenContainer.style.padding = '0';
     fullscreenContainer.style.margin = '0';
     fullscreenContainer.style.display = 'flex';
     fullscreenContainer.style.justifyContent = 'center';
     fullscreenContainer.style.alignItems = 'center';
     fullscreenContainer.style.zIndex = '9999';
-    fullscreenContainer.style.opacity = '0'; // Start with opacity 0
-    
-    // Prepare fullscreen image with transition for smooth scaling
-    fullscreenImage.style.maxWidth = '95vw';
-    fullscreenImage.style.maxHeight = '85vh';
-    fullscreenImage.style.objectFit = 'contain';
-    fullscreenImage.style.margin = '0 auto'; // Center horizontally
-    fullscreenImage.style.display = 'block'; // Ensure proper display mode
-    fullscreenImage.style.transition = 'transform 0.6s ease-in';
-    fullscreenImage.style.transform = 'scale(0.95)'; // Start slightly smaller
-    
-    // Position fullscreen controls at the top
-    const controls = document.querySelector('.fullscreen-controls');
-    if (controls) {
-        controls.style.position = 'absolute';
-        controls.style.top = '20px';
-        controls.style.right = '20px';
-        controls.style.zIndex = '10000';
-        controls.style.opacity = '0'; // Start with controls hidden
-        controls.style.transition = 'opacity 0.6s ease-in';
-    }
-    
-    // First make container visible but with opacity 0
-    fullscreenContainer.style.display = 'flex';
     
     // Prevent scrolling while in fullscreen mode
     document.body.classList.add('fullscreen-active');
@@ -343,32 +321,57 @@ function enterFullscreen() {
     // Ensure footer is not visible in fullscreen
     footer.style.zIndex = '1';
     
-    // Phase 1: Start smooth fade in after a very short delay
+    // Make container visible immediately to ensure the image appears
+    fullscreenContainer.style.display = 'flex';
+    
+    // Initialize opacity to 0 for transition
+    fullscreenContainer.style.opacity = '0';
+    
+    // Prepare fullscreen image - ensure it stays in the viewport
+    fullscreenImage.style.maxWidth = '95vw';
+    fullscreenImage.style.maxHeight = '85vh';
+    fullscreenImage.style.objectFit = 'contain';
+    fullscreenImage.style.margin = '0 auto';
+    fullscreenImage.style.display = 'block';
+    fullscreenImage.style.transform = 'scale(0.95)'; // Start slightly smaller
+    
+    // Position fullscreen controls
+    const controls = document.querySelector('.fullscreen-controls');
+    if (controls) {
+        controls.style.position = 'absolute';
+        controls.style.top = '20px';
+        controls.style.right = '20px';
+        controls.style.zIndex = '10000';
+        controls.style.opacity = '0'; // Start hidden
+    }
+    
+    // Add the active class to enable CSS transitions
+    fullscreenContainer.classList.add('active');
+    
+    // Wait a tiny bit to ensure elements are rendered before starting transitions
     setTimeout(() => {
-        // Force a reflow so the transition will work
+        // Set transitions AFTER elements are in the DOM
+        fullscreenContainer.style.transition = 'opacity 0.8s ease-in';
+        fullscreenImage.style.transition = 'transform 0.6s ease-in';
+        if (controls) {
+            controls.style.transition = 'opacity 0.6s ease-in';
+        }
+        
+        // Force a reflow to make transitions work
         window.getComputedStyle(fullscreenContainer).opacity;
         
-        // Fade in container
+        // Now trigger all the transitions
         fullscreenContainer.style.opacity = '1';
-        
-        // Scale up image to full size
         fullscreenImage.style.transform = 'scale(1)';
-        
-        // Fade in controls
         if (controls) {
             controls.style.opacity = '1';
         }
         
-        // Phase 2: Reset any scroll that might have happened
-        setTimeout(() => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-            console.log('Reset scroll position in fullscreen mode');
-        }, 100);
+        // Reset scroll position to top
+        window.scrollTo(0, 0);
         
-    }, 50);
+        console.log('Fullscreen transitions started');
+    }, 20);
 }
     
 function exitFullscreen() {
