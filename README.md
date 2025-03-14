@@ -124,6 +124,11 @@ graph TD
 
 5. **Launch**
    ```bash
+   # Option 1: Start both the MCP server and web app with one command
+   # (recommended for most users)
+   ./start-all.sh
+   
+   # Option 2: Start only the web app
    npm start
    ```
 
@@ -158,23 +163,26 @@ Scan this QR code to open the app on your phone (when running locally):
 ```
 PORT=8080
 HOST=127.0.0.1
-MCP_SERVER_URL=http://localhost:3001
+MCP_PORT=3003
+MCP_SERVER_URL=http://localhost:3003
 ALLOWED_ORIGINS=http://localhost:8080
 ```
 
 #### Network Access
 ```
-PORT=3000
+PORT=3002
 HOST=0.0.0.0
-MCP_SERVER_URL=http://localhost:3001
-ALLOWED_ORIGINS=http://localhost:3000,http://192.168.1.100:3000
+MCP_PORT=3003
+MCP_SERVER_URL=http://localhost:3003
+ALLOWED_ORIGINS=http://localhost:3002,http://192.168.1.100:3002
 ```
 
 #### Production Deployment
 ```
 PORT=9000
 HOST=0.0.0.0
-MCP_SERVER_URL=http://localhost:3001
+MCP_PORT=3003
+MCP_SERVER_URL=http://localhost:3003
 ALLOWED_ORIGINS=https://your-domain.com
 HOSTNAME=your-domain.com
 ```
@@ -198,6 +206,7 @@ docker run -d \
   -e RIJKSMUSEUM_API_KEY=your_api_key \
   -e MCP_SERVER_URL=http://host.docker.internal:3003 \
   -e PORT=3002 \
+  -e MCP_PORT=3003 \
   -e HOST=0.0.0.0 \
   -e ALLOWED_ORIGINS=http://your-server-ip:3002 \
   --name rijksmuseum-interface \
@@ -236,9 +245,13 @@ To deploy the latest version of the application to your Unraid server:
    cd /path/to/rijksmuseum-interface
    git pull origin main
    ```
-4. Restart the container:
+4. Run the start-all script or unraid-update script:
    ```bash
-   docker restart rijksmuseum-interface
+   # Option 1: Use the all-in-one starter script
+   ./start-all.sh
+   
+   # Option 2: Update the Docker container
+   ./unraid-update.sh
    ```
    
 Alternatively, you can use the Docker web UI in Unraid to:
@@ -256,6 +269,12 @@ For production deployment, you should run the MCP server as a separate service:
 
 Example PM2 setup:
 ```bash
+# Set the correct port first
+cd /path/to/rijksmuseum-mcp
+echo "PORT=3003" > .env
+echo "RIJKSMUSEUM_API_KEY=your_api_key" >> .env
+
+# Start with PM2
 pm2 start /path/to/mcp-server/build/index.js --name "rijksmuseum-mcp"
 pm2 save
 ```
