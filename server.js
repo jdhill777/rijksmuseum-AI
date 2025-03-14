@@ -487,6 +487,22 @@ Example conversions:
         claudeResponse = { content: [{ text: `Here are some artworks related to "${message}" from the Rijksmuseum collection.` }] };
       }
       
+      // Special handling for artist-specific searches to ensure correct results
+      let artistFilter = null;
+
+      if (message.toLowerCase().includes('van gogh') || 
+          searchTerms.toLowerCase().includes('van gogh') ||
+          searchTerms.toLowerCase().includes('vangogh')) {
+        console.log('Detected Van Gogh query, applying artist filter');
+        artistFilter = 'Vincent van Gogh';
+        // Make sure we're using proper search terms for Van Gogh
+        searchTerms = 'Vincent van Gogh';
+      } else if (message.toLowerCase().includes('rembrandt') || 
+                searchTerms.toLowerCase().includes('rembrandt')) {
+        console.log('Detected Rembrandt query, applying artist filter');
+        artistFilter = 'Rembrandt van Rijn';
+      }
+      
       // Preprocess search terms for time period queries
       const decadeMatch = message.match(/\b(\d{4})s\b/i); // Match patterns like "1640s"
       const timeQuery = decadeMatch || 
@@ -541,8 +557,20 @@ Example conversions:
       
       console.log(`Found ${artworks.length} artworks for search term: "${searchTerms}" (page ${page}, items ${pageStart}-${pageEnd})`);
       
-      // Update response object with artworks
-      responseObject.artworks = artworks;
+      // Filter artworks by artist if an artist filter is set
+      if (artistFilter) {
+        console.log(`Filtering results to show only works by "${artistFilter}"`);
+        const filteredArtworks = artworks.filter(artwork => 
+          artwork.principalOrFirstMaker && 
+          artwork.principalOrFirstMaker.toLowerCase().includes(artistFilter.toLowerCase())
+        );
+        
+        console.log(`Filtered from ${artworks.length} to ${filteredArtworks.length} artworks`);
+        responseObject.artworks = filteredArtworks;
+      } else {
+        // No filter applied
+        responseObject.artworks = artworks;
+      }
     
     console.log('Preparing response with:', artworks.length, 'artworks');
     
