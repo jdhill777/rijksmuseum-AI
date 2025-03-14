@@ -61,10 +61,20 @@ else
 fi
 
 echo -e "${BLUE}Starting Docker container...${NC}"
-echo "Using docker-compose to build and start the container"
+echo "Building and running Docker container directly (without docker-compose)"
 
-# Run docker-compose
-docker-compose up -d
+# Build the Docker image
+echo "Building Docker image..."
+docker build -t rijksmuseum-interface .
+
+# Run the container
+echo "Starting container..."
+docker run -d \
+    --name rijksmuseum-interface \
+    -p ${PORT}:${PORT} \
+    --env-file .env \
+    --restart unless-stopped \
+    rijksmuseum-interface
 
 echo ""
 if [ $? -eq 0 ]; then
@@ -75,9 +85,9 @@ if [ $? -eq 0 ]; then
     fi
     echo ""
     echo -e "${BLUE}Container management commands:${NC}"
-    echo "  • Stop container:    docker-compose down"
-    echo "  • View logs:         docker-compose logs -f"
-    echo "  • Restart:           docker-compose restart"
+    echo "  • Stop container:    docker stop rijksmuseum-interface"
+    echo "  • View logs:         docker logs -f rijksmuseum-interface"
+    echo "  • Restart:           docker restart rijksmuseum-interface"
 else
     echo -e "${RED}Failed to start container${NC}"
     echo "Please check the error messages above"

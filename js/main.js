@@ -144,13 +144,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Event Listeners
-    submitButton.addEventListener('click', () => {
-        console.log('Submit button clicked');
-        // Force an empty search to trigger default behavior
-        userInput.value = '';
-        console.log('Set input value to empty string');
+submitButton.addEventListener('click', () => {
+    console.log('Submit button clicked');
+    
+    // Get the current input value
+    const inputValue = userInput.value.trim();
+    console.log('[INPUT VALUE]:', inputValue);
+    
+    // Handle empty search
+    if (!inputValue) {
+        console.log('[EMPTY SEARCH] - Using default Van Gogh query');
+        userInput.value = "Show me paintings by Van Gogh";
         handleSubmit();
-    });
+        return;
+    }
+    
+    // Handle normal search
+    console.log('[REGULAR SEARCH] - Submitting current input');
+    handleSubmit();
+});
     
     // Handle key events in the input field - Fix for Enter key detection
     console.log('Setting up input field event listeners');
