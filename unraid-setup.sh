@@ -41,23 +41,27 @@ if [[ "$RIJKS_KEY" == "" || "$RIJKS_KEY" == "your_rijksmuseum_api_key_here" ]]; 
     echo -e "${GREEN}Rijksmuseum API key updated${NC}"
 fi
 
-# Configure port
+# Configure server settings
 read -p "Enter port to use (default 3000): " PORT
 PORT=${PORT:-3000}
-sed -i "s/PORT=.*/PORT=${PORT}/" .env
+sed -i "s/^PORT=.*/PORT=${PORT}/" .env
 echo -e "${GREEN}Port set to ${PORT}${NC}"
+
+# Set HOST variable without any comments that could cause parsing issues
+sed -i "s/^HOST=.*/HOST=0.0.0.0/" .env
+echo -e "${GREEN}HOST set to 0.0.0.0 (all network interfaces)${NC}"
 
 # Configure hostname if needed
 read -p "Enter your domain name (leave empty if none): " HOSTNAME
-sed -i "s/HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" .env
+sed -i "s/^HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" .env
 if [ -n "$HOSTNAME" ]; then
     echo -e "${GREEN}Hostname set to ${HOSTNAME}${NC}"
     # Update ALLOWED_ORIGINS for the domain
     echo "Setting ALLOWED_ORIGINS to include your domain"
-    sed -i "s/ALLOWED_ORIGINS=.*/ALLOWED_ORIGINS=http:\/\/localhost:${PORT},https:\/\/${HOSTNAME},http:\/\/${HOSTNAME}/" .env
+    sed -i "s/^ALLOWED_ORIGINS=.*/ALLOWED_ORIGINS=http:\/\/localhost:${PORT},https:\/\/${HOSTNAME},http:\/\/${HOSTNAME}/" .env
 else
     echo "No hostname set, using default ALLOWED_ORIGINS"
-    sed -i "s/ALLOWED_ORIGINS=.*/ALLOWED_ORIGINS=http:\/\/localhost:${PORT}/" .env
+    sed -i "s/^ALLOWED_ORIGINS=.*/ALLOWED_ORIGINS=http:\/\/localhost:${PORT}/" .env
 fi
 
 echo -e "${BLUE}Starting Docker container...${NC}"

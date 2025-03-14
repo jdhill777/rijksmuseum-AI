@@ -15,7 +15,15 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0'; // Default to all network interfaces
+
+// Parse HOST value, removing any comments
+const parseHost = (hostStr) => {
+  if (!hostStr) return '0.0.0.0'; // Default to all network interfaces
+  // Split on space or # and take the first part
+  return hostStr.split(/[\s#]/)[0].trim();
+};
+const HOST = parseHost(process.env.HOST);
+console.log(`Using host: ${HOST}`);
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
