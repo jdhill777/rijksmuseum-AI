@@ -106,10 +106,7 @@ graph TD
    # Return to the main project directory
    cd /path/to/rijksmuseumAI
    
-   # Copy example environment file
-   cp .env.example .env
-
-   # Edit .env file with your API keys
+   # Edit the .env file with your API keys
    nano .env  # or use any text editor
    ```
 
