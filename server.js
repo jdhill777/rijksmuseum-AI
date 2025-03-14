@@ -123,7 +123,10 @@ app.use((req, res, next) => {
 // MCP-based helper functions for Rijksmuseum data
 // Uses the rijksmuseum-mcp server instead of direct API calls
 
-// Helper function to search for artworks - simplified version without negative terms
+// MCP server configuration - adapted to use directly via HTTP
+const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3001';
+
+// Helper function to search for artworks via MCP server
 async function searchArtworks(query, options = {}) {
   console.log(`Searching for artworks with query "${query}" and options:`, options);
   
@@ -132,27 +135,56 @@ async function searchArtworks(query, options = {}) {
   console.log(`Cleaned query: "${cleanQuery}"`);
   
   try {
-    // Create simple parameters
-    const params = new URLSearchParams({
-      key: process.env.RIJKSMUSEUM_API_KEY,
-      q: cleanQuery,
-      return: 'json',
-      imgonly: true,
-      p: options.page || 1,
-      ps: options.limit || 15,
-      s: 'relevance'
-    });
-    
-    const response = await fetch(`https://www.rijksmuseum.nl/api/en/collection?${params}`);
-    
-    if (!response.ok) {
-      throw new Error(`Rijksmuseum API error: ${response.status}`);
+    // First attempt to use MCP server
+    try {
+      console.log('Attempting to use MCP server for artwork search');
+      
+      // Call MCP server search_artwork tool directly
+      const mcpResponse = await fetch(`${MCP_SERVER_URL}/api/tools/search_artwork`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: cleanQuery,
+          pageSize: options.limit || 15,
+          page: options.page || 1
+        })
+      });
+      
+      if (mcpResponse.ok) {
+        const mcpData = await mcpResponse.json();
+        console.log(`MCP server returned ${mcpData.artworks?.length || 0} artworks`);
+        return mcpData.artworks || [];
+      } else {
+        console.log(`MCP server request failed with status: ${mcpResponse.status}`);
+        throw new Error('MCP server request failed');
+      }
+    } catch (mcpError) {
+      console.error('Error using MCP server, falling back to direct API:', mcpError);
+      
+      // Fall back to direct Rijksmuseum API call
+      const params = new URLSearchParams({
+        key: process.env.RIJKSMUSEUM_API_KEY,
+        q: cleanQuery,
+        return: 'json',
+        imgonly: true, 
+        p: options.page || 1,
+        ps: options.limit || 15,
+        s: 'relevance'
+      });
+      
+      const response = await fetch(`https://www.rijksmuseum.nl/api/en/collection?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`Rijksmuseum API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.artObjects || [];
     }
-    
-    const data = await response.json();
-    return data.artObjects || [];
   } catch (error) {
-    console.error('Error fetching from Rijksmuseum API:', error);
+    console.error('All artwork search methods failed:', error);
     return [];
   }
 }
@@ -160,56 +192,98 @@ async function searchArtworks(query, options = {}) {
 // Helper function to get artwork details
 async function getArtworkDetails(objectNumber) {
   try {
-    // Create simple parameters
-    const params = new URLSearchParams({
-      key: process.env.RIJKSMUSEUM_API_KEY,
-      return: 'json',
-      format: 'json'
-    });
-
-    const response = await fetch(
-      `https://www.rijksmuseum.nl/api/en/collection/${objectNumber}?${params}`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Rijksmuseum API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Structure the response with the fields we need
-    const processedData = {
-      artObject: {
-        ...data.artObject,
-        // Description: prioritize plaque description, then label, then title
-        plaqueDescriptionEnglish: data.artObject?.plaqueDescriptionEnglish || 
-                                 data.artObject?.label?.description ||
-                                 data.artObject?.scLabelLine || 
-                                 data.artObject?.description ||
-                                 data.artObject?.title || '',
+    // First attempt to use MCP server
+    try {
+      console.log('Attempting to use MCP server for artwork details');
+      
+      // Call MCP server get_artwork_details tool directly
+      const mcpResponse = await fetch(`${MCP_SERVER_URL}/api/tools/get_artwork_details`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          objectNumber: objectNumber
+        })
+      });
+      
+      if (mcpResponse.ok) {
+        const mcpData = await mcpResponse.json();
         
-        // Physical Medium: combine medium, materials, and techniques
-        physicalMedium: [
-          data.artObject?.physicalMedium,
-          data.artObject?.materials?.length ? data.artObject.materials.join(', ') : null,
-          data.artObject?.techniques?.length ? data.artObject.techniques.join(', ') : null
-        ].filter(Boolean).join(' - ') || 'Information not available',
+        // Format the response to match our expected structure
+        const processedData = {
+          artObject: {
+            ...mcpData,
+            objectNumber: mcpData.objectNumber || objectNumber,
+            title: mcpData.title || 'Unknown Title',
+            principalOrFirstMaker: mcpData.principalOrFirstMaker || mcpData.artist || '',
+            plaqueDescriptionEnglish: mcpData.description || mcpData.title || '',
+            physicalMedium: mcpData.physicalMedium || mcpData.materials || 'Information not available',
+            dimensions: mcpData.dimensions || [],
+            subTitle: mcpData.subTitle || '',
+            location: mcpData.location || 'Information not available'
+          }
+        };
         
-        // Dimensions: use subTitle or detailed dimensions
-        dimensions: data.artObject?.dimensionParts || data.artObject?.dimensions || [],
-        subTitle: data.artObject?.subTitle || '',
-        
-        // Location: try all possible location fields
-        location: data.artObject?.location || 
-                 data.artObject?.currentLocation || 
-                 data.artObject?.gallery || 
-                 'Information not available'
+        return processedData;
+      } else {
+        console.log(`MCP server artwork details request failed with status: ${mcpResponse.status}`);
+        throw new Error('MCP server artwork details request failed');
       }
-    };
-    
-    return processedData;
+    } catch (mcpError) {
+      console.error('Error using MCP server for artwork details, falling back to direct API:', mcpError);
+      
+      // Fall back to direct Rijksmuseum API call
+      const params = new URLSearchParams({
+        key: process.env.RIJKSMUSEUM_API_KEY,
+        return: 'json',
+        format: 'json'
+      });
+
+      const response = await fetch(
+        `https://www.rijksmuseum.nl/api/en/collection/${objectNumber}?${params}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Rijksmuseum API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Structure the response with the fields we need
+      const processedData = {
+        artObject: {
+          ...data.artObject,
+          // Description: prioritize plaque description, then label, then title
+          plaqueDescriptionEnglish: data.artObject?.plaqueDescriptionEnglish || 
+                                   data.artObject?.label?.description ||
+                                   data.artObject?.scLabelLine || 
+                                   data.artObject?.description ||
+                                   data.artObject?.title || '',
+          
+          // Physical Medium: combine medium, materials, and techniques
+          physicalMedium: [
+            data.artObject?.physicalMedium,
+            data.artObject?.materials?.length ? data.artObject.materials.join(', ') : null,
+            data.artObject?.techniques?.length ? data.artObject.techniques.join(', ') : null
+          ].filter(Boolean).join(' - ') || 'Information not available',
+          
+          // Dimensions: use subTitle or detailed dimensions
+          dimensions: data.artObject?.dimensionParts || data.artObject?.dimensions || [],
+          subTitle: data.artObject?.subTitle || '',
+          
+          // Location: try all possible location fields
+          location: data.artObject?.location || 
+                   data.artObject?.currentLocation || 
+                   data.artObject?.gallery || 
+                   'Information not available'
+        }
+      };
+      
+      return processedData;
+    }
   } catch (error) {
-    console.error('Error fetching artwork details:', error);
+    console.error('All artwork details methods failed:', error);
     throw error;
   }
 }
