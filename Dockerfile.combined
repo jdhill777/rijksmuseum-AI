@@ -19,6 +19,13 @@ COPY apple-touch-icon.png ./
 # Install web app dependencies
 RUN npm install --production
 
+# Fix PM2 module system compatibility by adding type:commonjs to package.json
+RUN if grep -q '"type"' package.json; then \
+    sed -i 's/"type"[[:space:]]*:[[:space:]]*"module"/"type": "commonjs"/g' package.json; \
+  else \
+    sed -i '/"name"/a \ \ "type": "commonjs",' package.json; \
+  fi
+
 # Create MCP server directory
 WORKDIR /app/rijksmuseum-mcp
 
