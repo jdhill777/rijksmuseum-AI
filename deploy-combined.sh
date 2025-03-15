@@ -55,13 +55,22 @@ EOF
     ${EDITOR:-nano} .env
 fi
 
-# Set default values from .env file
-PORT=${PORT:-3002}
-MCP_PORT=${MCP_PORT:-3003}
+# Clean up any problematic line endings
+sed -i 's/\r$//' .env
+
+# Get current port values or set defaults with clean extraction
+PORT=$(grep -E "^PORT=[0-9]+" .env | cut -d= -f2 | tr -d '\r\n' || echo "3002")
+MCP_PORT=$(grep -E "^MCP_PORT=[0-9]+" .env | cut -d= -f2 | tr -d '\r\n' || echo "3003")
+CURRENT_HOSTNAME=$(grep -E "^HOSTNAME=" .env | cut -d= -f2 | tr -d '\r\n' || echo "")
+CURRENT_ALLOWED_ORIGINS=$(grep -E "^ALLOWED_ORIGINS=" .env | cut -d= -f2 | tr -d '\r\n' || echo "")
 ANTHROPIC_API_KEY=$(grep -E "^ANTHROPIC_API_KEY=" .env | cut -d= -f2 | tr -d '\r\n' || echo "")
 RIJKSMUSEUM_API_KEY=$(grep -E "^RIJKSMUSEUM_API_KEY=" .env | cut -d= -f2 | tr -d '\r\n' || echo "")
 
-# Check API keys
+# Ensure we have clean integer values for ports
+PORT=$(echo "$PORT" | grep -o '^[0-9]*' || echo "3002")
+MCP_PORT=$(echo "$MCP_PORT" | grep -o '^[0-9]*' || echo "3003")
+
+# Check API keys first
 if [[ -z "$ANTHROPIC_API_KEY" || "$ANTHROPIC_API_KEY" == "your_api_key_here" ]]; then
     echo -e "${RED}Error: Anthropic API key not set in .env file${NC}"
     read -p "Enter your Anthropic API key: " ANTHROPIC_API_KEY </dev/tty
@@ -74,9 +83,67 @@ if [[ -z "$RIJKSMUSEUM_API_KEY" || "$RIJKSMUSEUM_API_KEY" == "your_rijksmuseum_a
     sed -i "s/^RIJKSMUSEUM_API_KEY=.*/RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}/" .env
 fi
 
-# Ensure MCP_SERVER_URL is correct
+# Display current configuration
+echo -e "${BLUE}Current Configuration:${NC}"
+echo -e "  Web server port: ${YELLOW}${PORT}${NC}"
+echo -e "  MCP server port: ${YELLOW}${MCP_PORT}${NC}"
+echo -e "  Hostname: ${YELLOW}${CURRENT_HOSTNAME:-None}${NC}"
+echo -e "  Allowed origins: ${YELLOW}${CURRENT_ALLOWED_ORIGINS:-None}${NC}"
+
+# Ask for port configuration
+echo -e "${BLUE}Port Configuration:${NC}"
+read -p "Web server port [${PORT}]: " NEW_PORT </dev/tty
+PORT=${NEW_PORT:-$PORT}
+
+read -p "MCP server port [${MCP_PORT}]: " NEW_MCP_PORT </dev/tty
+MCP_PORT=${NEW_MCP_PORT:-$MCP_PORT}
+
+# Ask for hostname configuration
+echo -e "${YELLOW}Hostname configuration (optional):${NC}"
+echo -e "If you're accessing this through a domain name or specific IP, enter it here."
+echo -e "This will be used for CORS configuration and access URLs."
+read -p "Hostname (e.g., example.com or IP) [${CURRENT_HOSTNAME}]: " NEW_HOSTNAME </dev/tty
+HOSTNAME=${NEW_HOSTNAME:-$CURRENT_HOSTNAME}
+
+# Configure ALLOWED_ORIGINS
+if [[ -n "$HOSTNAME" ]]; then
+    # Build default ALLOWED_ORIGINS with localhost and the hostname
+    DEFAULT_ORIGINS="http://localhost:${PORT},http://${HOSTNAME}:${PORT}"
+    
+    # If hostname doesn't look like an IP address, also add it without port
+    if ! [[ $HOSTNAME =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        DEFAULT_ORIGINS+=",http://${HOSTNAME},https://${HOSTNAME}"
+    fi
+    
+    # Ask for allowed origins
+    echo -e "${YELLOW}CORS Configuration:${NC}"
+    echo -e "Enter comma-separated list of domains allowed to access the API (CORS)"
+    read -p "Allowed origins [${DEFAULT_ORIGINS}]: " NEW_ALLOWED_ORIGINS </dev/tty
+    ALLOWED_ORIGINS=${NEW_ALLOWED_ORIGINS:-$DEFAULT_ORIGINS}
+else
+    # Default to localhost only if no hostname
+    DEFAULT_ORIGINS="http://localhost:${PORT}"
+    read -p "Allowed origins [${DEFAULT_ORIGINS}]: " NEW_ALLOWED_ORIGINS </dev/tty
+    ALLOWED_ORIGINS=${NEW_ALLOWED_ORIGINS:-$DEFAULT_ORIGINS}
+fi
+
+# Update settings in .env
+echo -e "${BLUE}Updating environment configuration...${NC}"
+sed -i "s/^PORT=.*/PORT=${PORT}/" .env
+sed -i "s/^MCP_PORT=.*/MCP_PORT=${MCP_PORT}/" .env
+sed -i "s/^HOSTNAME=.*/HOSTNAME=${HOSTNAME}/" .env
+sed -i "s/^ALLOWED_ORIGINS=.*/ALLOWED_ORIGINS=${ALLOWED_ORIGINS}/" .env
+sed -i "s/^HOST=.*/HOST=0.0.0.0/" .env
+
+# Ensure MCP_SERVER_URL is correct for combined container
 echo -e "${BLUE}Setting MCP_SERVER_URL to use localhost...${NC}"
 sed -i "s|^MCP_SERVER_URL=.*|MCP_SERVER_URL=http://localhost:${MCP_PORT}|" .env
+
+echo -e "${GREEN}Environment configured:${NC}"
+echo -e "  Web server port: ${BLUE}${PORT}${NC}"
+echo -e "  MCP server port: ${BLUE}${MCP_PORT}${NC}"
+echo -e "  Hostname: ${BLUE}${HOSTNAME:-None}${NC}"
+echo -e "  Allowed origins: ${BLUE}${ALLOWED_ORIGINS}${NC}"
 
 # Stop any existing containers with the same names
 echo -e "${YELLOW}Stopping existing containers...${NC}"
