@@ -20,10 +20,11 @@ if [[ -f "rijksmuseum-AI/.env" ]]; then
     cp rijksmuseum-AI/.env /tmp/rijksmuseum-env.backup
 fi
 
-# Step 1: Stop ALL running Docker containers
-echo -e "${BLUE}Stopping all Docker containers...${NC}"
-docker stop $(docker ps -a -q) 2>/dev/null || true
-docker rm $(docker ps -a -q) 2>/dev/null || true
+# Step 1: Stop ONLY Rijksmuseum-related containers
+echo -e "${BLUE}Stopping Rijksmuseum-related containers...${NC}"
+echo -e "${YELLOW}(Other containers on your system will not be affected)${NC}"
+docker stop rijksmuseum-combined rijksmuseum-ai-interface rijksmuseum-ai-mcp-server rijksmuseum-interface rijksmuseum-mcp-server 2>/dev/null || true
+docker rm rijksmuseum-combined rijksmuseum-ai-interface rijksmuseum-ai-mcp-server rijksmuseum-interface rijksmuseum-mcp-server 2>/dev/null || true
 
 # Step 2: Find and kill any processes that might have the fuse files open
 echo -e "${BLUE}Finding and killing processes that have fuse files open...${NC}"
