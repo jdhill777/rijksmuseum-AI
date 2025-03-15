@@ -7,8 +7,8 @@ echo "Web server port: $PORT"
 echo "MCP server port: $MCP_PORT"
 echo "MCP server URL: $MCP_SERVER_URL"
 
-# Create PM2 ecosystem config file dynamically
-cat > ecosystem.config.js << EOF
+# Create PM2 ecosystem config file dynamically with .cjs extension for CommonJS
+cat > ecosystem.config.cjs << EOF
 module.exports = {
   apps: [
     {
@@ -45,4 +45,4 @@ EOF
 
 # Start services with PM2
 echo "Starting services with PM2..."
-pm2-runtime start ecosystem.config.js
+pm2-runtime start ecosystem.config.cjs
