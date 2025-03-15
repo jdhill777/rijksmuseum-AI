@@ -1,0 +1,50 @@
+# Combined Dockerfile for Rijksmuseum Web App and MCP Server
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install process manager
+RUN npm install -g pm2
+
+# Copy web app files
+COPY package*.json ./
+COPY server.js ./
+COPY index.html ./
+COPY css/ ./css/
+COPY js/ ./js/
+COPY favicon* ./
+COPY apple-touch-icon.png ./
+
+# Install web app dependencies
+RUN npm install --production
+
+# Create MCP server directory
+WORKDIR /app/rijksmuseum-mcp
+
+# Copy MCP server files
+COPY rijksmuseum-mcp/package*.json ./
+COPY rijksmuseum-mcp/tsconfig.json ./
+COPY rijksmuseum-mcp/src/ ./src/
+
+# Install MCP server dependencies and build
+RUN npm install
+RUN npm run build
+
+# Create startup script
+WORKDIR /app
+COPY combined-startup.sh ./
+RUN chmod +x combined-startup.sh
+
+# Set environment variables with defaults (will be overridden by docker-compose)
+ENV PORT=3002
+ENV MCP_PORT=3003
+ENV HOST=0.0.0.0
+ENV NODE_ENV=production
+ENV MCP_SERVER_URL=http://localhost:3003
+
+# Expose both ports
+EXPOSE 3002 3003
+
+# Start both services using PM2
+CMD ["/app/combined-startup.sh"]

@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  rijksmuseum-combined:
+    build:
+      context: .
+      dockerfile: Dockerfile.combined
+    container_name: rijksmuseum-combined
+    ports:
+      - "${PORT:-3002}:${PORT:-3002}"
+      - "${MCP_PORT:-3003}:${MCP_PORT:-3003}"
+    environment:
+      # These values will be overridden by your .env file
+      - PORT=${PORT:-3002}
+      - MCP_PORT=${MCP_PORT:-3003}
+      - HOST=0.0.0.0
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - RIJKSMUSEUM_API_KEY=${RIJKSMUSEUM_API_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3002}
+      - HOSTNAME=${HOSTNAME:-}
+      # Since both services run in the same container, localhost works for MCP URL
+      - MCP_SERVER_URL=http://localhost:${MCP_PORT:-3003}
+    restart: unless-stopped
+    labels:
+      - "com.github.jdhill777.description=Rijksmuseum Art Explorer with Claude AI (Combined)"
+      - "com.github.jdhill777.service=rijksmuseum-combined"
