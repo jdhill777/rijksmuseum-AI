@@ -195,6 +195,24 @@ docker-compose up -d
 docker-compose down
 ```
 
+### Using the Combined Container (New!)
+```bash
+# For environments where container-to-container networking is problematic
+./deploy-combined.sh
+```
+
+This new deployment option runs both the web app and MCP server in a single container using PM2, which eliminates all networking issues between the services.
+
+```bash
+# Alternative manual command
+docker-compose -f docker-compose.combined.yml up -d
+```
+
+The combined container solution is particularly useful for:
+- Systems where host networking is restricted
+- Unraid servers with connectivity issues
+- Environments where MCP server lookups fail
+
 ### Manual Docker Command
 ```bash
 docker run -d \
@@ -230,6 +248,8 @@ docker run -d \
 | Empty results | Check Rijksmuseum API key permissions |
 | "MCP server request failed" | Ensure MCP server is running and URL is correct |
 | Poor search results | Enable MCP server for better search capabilities |
+| "Connection refused" errors | Try the combined container deployment |
+| "ENOTFOUND mcp-server" | Use the combined container with PM2 |
 
 ## 🚀 Deploying to Unraid
 
@@ -242,18 +262,16 @@ To deploy the latest version of the application to your Unraid server:
    cd /path/to/rijksmuseum-interface
    git pull origin main
    ```
-4. Run the start-all script or unraid-update script:
+4. Run the deployment script:
    ```bash
-   # Option 1: Use the all-in-one starter script
-   ./start-all.sh
+   # Option 1: Use the two-container configuration
+   ./deploy-to-unraid.sh
    
-   # Option 2: Update the Docker container
-   ./unraid-update.sh
+   # Option 2: Use the single-container solution (NEW!)
+   ./deploy-combined.sh
    ```
    
-Alternatively, you can use the Docker web UI in Unraid to:
-1. Update the container by clicking "Update" 
-2. Force recreate the container after updating
+If you're experiencing connectivity issues between containers, the combined solution is recommended. It eliminates all inter-container networking by running both services in the same container managed by PM2.
 
 ## 🌐 MCP Server in Production
 
